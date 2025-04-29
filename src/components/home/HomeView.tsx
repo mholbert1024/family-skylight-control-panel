@@ -1,12 +1,13 @@
+
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import { 
   Lightbulb, 
   ThermometerSun, 
   DoorClosed, 
   Warehouse, 
   AlarmClock,
-  House
+  House,
+  Power
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -45,115 +46,156 @@ const HomeView: React.FC = () => {
         </Badge>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Lighting controls */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center">
-              <Lightbulb className="h-5 w-5 mr-2" />
-              Lighting
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-2">
-              <Button 
-                variant={deviceStates.livingRoomLights ? "default" : "outline"}
-                className="justify-start h-12"
-                onClick={() => toggleDevice('livingRoomLights')}
-              >
-                <div className={`w-3 h-3 rounded-full mr-3 ${deviceStates.livingRoomLights ? 'bg-amber-400' : 'bg-gray-300'}`}></div>
-                Living Room
-              </Button>
-              
-              <Button 
-                variant={deviceStates.kitchenLights ? "default" : "outline"}
-                className="justify-start h-12"
-                onClick={() => toggleDevice('kitchenLights')}
-              >
-                <div className={`w-3 h-3 rounded-full mr-3 ${deviceStates.kitchenLights ? 'bg-amber-400' : 'bg-gray-300'}`}></div>
-                Kitchen
-              </Button>
-              
-              <Button 
-                variant={deviceStates.bedroomLights ? "default" : "outline"}
-                className="justify-start h-12"
-                onClick={() => toggleDevice('bedroomLights')}
-              >
-                <div className={`w-3 h-3 rounded-full mr-3 ${deviceStates.bedroomLights ? 'bg-amber-400' : 'bg-gray-300'}`}></div>
-                Bedrooms
-              </Button>
+      {/* Mushroom-style cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {/* Lighting controls as mushroom cards */}
+        <Card className="relative overflow-hidden group bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-all duration-200">
+          <button 
+            className="absolute top-0 right-0 bottom-0 left-0 z-10"
+            onClick={() => toggleDevice('livingRoomLights')}
+            aria-label="Toggle Living Room Lights"
+          />
+          <CardContent className="p-4 flex flex-col items-center">
+            <div className={`w-12 h-12 flex items-center justify-center rounded-full mb-2 ${deviceStates.livingRoomLights ? 'bg-amber-100' : 'bg-gray-100'}`}>
+              <Lightbulb 
+                className={`h-6 w-6 ${deviceStates.livingRoomLights ? 'text-amber-500' : 'text-gray-400'}`} 
+              />
             </div>
+            <h3 className="text-sm font-medium">Living Room</h3>
+            <span className="text-xs text-gray-500">{deviceStates.livingRoomLights ? 'On' : 'Off'}</span>
           </CardContent>
         </Card>
-        
-        {/* Security controls */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center">
-              <DoorClosed className="h-5 w-5 mr-2" />
-              Security
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid gap-2">
-              <Button 
-                variant="outline"
-                className={`justify-start h-12 ${deviceStates.frontDoor === 'locked' ? 'border-green-500 text-green-700 bg-green-50' : 'border-red-500 text-red-700 bg-red-50'}`}
-                onClick={() => toggleDevice('frontDoor', deviceStates.frontDoor === 'locked' ? 'unlocked' : 'locked')}
-              >
-                <DoorClosed className="h-4 w-4 mr-3" />
-                Front Door: {deviceStates.frontDoor}
-              </Button>
-              
-              <Button 
-                variant="outline"
-                className={`justify-start h-12 ${deviceStates.garageDoor === 'closed' ? 'border-green-500 text-green-700 bg-green-50' : 'border-red-500 text-red-700 bg-red-50'}`}
-                onClick={() => toggleDevice('garageDoor', deviceStates.garageDoor === 'closed' ? 'open' : 'closed')}
-              >
-                <Warehouse className="h-4 w-4 mr-3" />
-                Garage Door: {deviceStates.garageDoor}
-              </Button>
-              
-              <Button 
-                variant="outline"
-                className={`justify-start h-12 ${deviceStates.alarm === 'armed' ? 'border-blue-500 text-blue-700 bg-blue-50' : 'text-gray-700'}`}
-                onClick={() => toggleDevice('alarm', deviceStates.alarm === 'armed' ? 'disarmed' : 'armed')}
-              >
-                <AlarmClock className="h-4 w-4 mr-3" />
-                Alarm System: {deviceStates.alarm}
-              </Button>
+
+        <Card className="relative overflow-hidden group bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-all duration-200">
+          <button 
+            className="absolute top-0 right-0 bottom-0 left-0 z-10"
+            onClick={() => toggleDevice('kitchenLights')}
+            aria-label="Toggle Kitchen Lights"
+          />
+          <CardContent className="p-4 flex flex-col items-center">
+            <div className={`w-12 h-12 flex items-center justify-center rounded-full mb-2 ${deviceStates.kitchenLights ? 'bg-amber-100' : 'bg-gray-100'}`}>
+              <Lightbulb 
+                className={`h-6 w-6 ${deviceStates.kitchenLights ? 'text-amber-500' : 'text-gray-400'}`} 
+              />
             </div>
+            <h3 className="text-sm font-medium">Kitchen</h3>
+            <span className="text-xs text-gray-500">{deviceStates.kitchenLights ? 'On' : 'Off'}</span>
           </CardContent>
         </Card>
-        
+
+        <Card className="relative overflow-hidden group bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-all duration-200">
+          <button 
+            className="absolute top-0 right-0 bottom-0 left-0 z-10"
+            onClick={() => toggleDevice('bedroomLights')}
+            aria-label="Toggle Bedroom Lights"
+          />
+          <CardContent className="p-4 flex flex-col items-center">
+            <div className={`w-12 h-12 flex items-center justify-center rounded-full mb-2 ${deviceStates.bedroomLights ? 'bg-amber-100' : 'bg-gray-100'}`}>
+              <Lightbulb 
+                className={`h-6 w-6 ${deviceStates.bedroomLights ? 'text-amber-500' : 'text-gray-400'}`} 
+              />
+            </div>
+            <h3 className="text-sm font-medium">Bedrooms</h3>
+            <span className="text-xs text-gray-500">{deviceStates.bedroomLights ? 'On' : 'Off'}</span>
+          </CardContent>
+        </Card>
+
+        {/* Front door control */}
+        <Card className="relative overflow-hidden group bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-all duration-200">
+          <button 
+            className="absolute top-0 right-0 bottom-0 left-0 z-10"
+            onClick={() => toggleDevice('frontDoor', deviceStates.frontDoor === 'locked' ? 'unlocked' : 'locked')}
+            aria-label="Toggle Front Door"
+          />
+          <CardContent className="p-4 flex flex-col items-center">
+            <div className={`w-12 h-12 flex items-center justify-center rounded-full mb-2 ${deviceStates.frontDoor === 'locked' ? 'bg-green-100' : 'bg-red-100'}`}>
+              <DoorClosed 
+                className={`h-6 w-6 ${deviceStates.frontDoor === 'locked' ? 'text-green-600' : 'text-red-600'}`} 
+              />
+            </div>
+            <h3 className="text-sm font-medium">Front Door</h3>
+            <span className="text-xs text-gray-500 capitalize">{deviceStates.frontDoor}</span>
+          </CardContent>
+        </Card>
+
+        {/* Garage door control */}
+        <Card className="relative overflow-hidden group bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-all duration-200">
+          <button 
+            className="absolute top-0 right-0 bottom-0 left-0 z-10"
+            onClick={() => toggleDevice('garageDoor', deviceStates.garageDoor === 'closed' ? 'open' : 'closed')}
+            aria-label="Toggle Garage Door"
+          />
+          <CardContent className="p-4 flex flex-col items-center">
+            <div className={`w-12 h-12 flex items-center justify-center rounded-full mb-2 ${deviceStates.garageDoor === 'closed' ? 'bg-green-100' : 'bg-red-100'}`}>
+              <Warehouse 
+                className={`h-6 w-6 ${deviceStates.garageDoor === 'closed' ? 'text-green-600' : 'text-red-600'}`} 
+              />
+            </div>
+            <h3 className="text-sm font-medium">Garage Door</h3>
+            <span className="text-xs text-gray-500 capitalize">{deviceStates.garageDoor}</span>
+          </CardContent>
+        </Card>
+
+        {/* Alarm control */}
+        <Card className="relative overflow-hidden group bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-all duration-200">
+          <button 
+            className="absolute top-0 right-0 bottom-0 left-0 z-10"
+            onClick={() => toggleDevice('alarm', deviceStates.alarm === 'armed' ? 'disarmed' : 'armed')}
+            aria-label="Toggle Alarm"
+          />
+          <CardContent className="p-4 flex flex-col items-center">
+            <div className={`w-12 h-12 flex items-center justify-center rounded-full mb-2 ${deviceStates.alarm === 'armed' ? 'bg-blue-100' : 'bg-gray-100'}`}>
+              <AlarmClock 
+                className={`h-6 w-6 ${deviceStates.alarm === 'armed' ? 'text-blue-600' : 'text-gray-400'}`} 
+              />
+            </div>
+            <h3 className="text-sm font-medium">Alarm System</h3>
+            <span className="text-xs text-gray-500 capitalize">{deviceStates.alarm}</span>
+          </CardContent>
+        </Card>
+
         {/* Climate control */}
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center">
-              <ThermometerSun className="h-5 w-5 mr-2" />
-              Climate
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col items-center p-2">
-              <div className="text-4xl font-bold mb-4">{deviceStates.temperature}°</div>
-              <div className="flex gap-4">
-                <Button 
-                  onClick={() => toggleDevice('temperature', deviceStates.temperature - 1)}
-                  variant="outline"
-                  size="icon"
-                >
-                  -
-                </Button>
-                <Button 
-                  onClick={() => toggleDevice('temperature', deviceStates.temperature + 1)}
-                  variant="outline"
-                  size="icon"
-                >
-                  +
-                </Button>
-              </div>
+        <Card className="relative bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-all duration-200">
+          <CardContent className="p-4 flex flex-col items-center">
+            <div className="w-12 h-12 flex items-center justify-center rounded-full mb-2 bg-orange-100">
+              <ThermometerSun className="h-6 w-6 text-orange-600" />
             </div>
+            <h3 className="text-sm font-medium">Temperature</h3>
+            <div className="flex items-center gap-3 mt-1">
+              <button 
+                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200"
+                onClick={() => toggleDevice('temperature', deviceStates.temperature - 1)}
+              >
+                -
+              </button>
+              <span className="text-lg font-medium">{deviceStates.temperature}°</span>
+              <button 
+                className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-600 hover:bg-gray-200"
+                onClick={() => toggleDevice('temperature', deviceStates.temperature + 1)}
+              >
+                +
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Power toggle */}
+        <Card className="relative overflow-hidden group bg-white dark:bg-gray-800 rounded-xl shadow-md hover:shadow-lg transition-all duration-200">
+          <button 
+            className="absolute top-0 right-0 bottom-0 left-0 z-10"
+            onClick={() => {
+              toggleDevice('livingRoomLights', false);
+              toggleDevice('kitchenLights', false);
+              toggleDevice('bedroomLights', false);
+            }}
+            aria-label="All Lights Off"
+          />
+          <CardContent className="p-4 flex flex-col items-center">
+            <div className="w-12 h-12 flex items-center justify-center rounded-full mb-2 bg-gray-100">
+              <Power className="h-6 w-6 text-gray-600" />
+            </div>
+            <h3 className="text-sm font-medium">All Lights</h3>
+            <span className="text-xs text-gray-500">Turn off</span>
           </CardContent>
         </Card>
       </div>

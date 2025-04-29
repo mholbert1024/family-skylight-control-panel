@@ -2,13 +2,14 @@
 import React, { useState } from 'react';
 import { format, addDays, startOfWeek, addWeeks, subWeeks, isSameDay, getDay, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ArrowRight, Plus } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Plus, Edit, Trash } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
+import { toast } from '@/components/ui/use-toast';
 
 // Mock calendar data - this would come from Google Calendar/CalDAV in real implementation
 const mockEvents = [
@@ -59,7 +60,9 @@ const CalendarView: React.FC = () => {
   const [view, setView] = useState<'day' | 'week' | 'month'>('week');
   const [events, setEvents] = useState(mockEvents);
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
+  const [isEditEventOpen, setIsEditEventOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const [newEvent, setNewEvent] = useState({
     title: '',
     date: format(new Date(), 'yyyy-MM-dd'),
@@ -94,6 +97,57 @@ const CalendarView: React.FC = () => {
       category: 'general',
       color: 'bg-family-purple'
     });
+    
+    toast({
+      title: "Event Added",
+      description: `${event.title} has been added to the calendar.`,
+    });
+  };
+
+  const handleEditEvent = () => {
+    if (!selectedEvent) return;
+    
+    const eventDate = new Date(selectedEvent.date);
+    const updatedEvents = events.map(event => 
+      event.id === selectedEvent.id 
+        ? {
+            ...selectedEvent,
+            date: eventDate,
+            color: getColorForPerson(selectedEvent.person)
+          }
+        : event
+    );
+    
+    setEvents(updatedEvents);
+    setIsEditEventOpen(false);
+    setSelectedEvent(null);
+    
+    toast({
+      title: "Event Updated",
+      description: `${selectedEvent.title} has been updated.`,
+    });
+  };
+  
+  const handleDeleteEvent = () => {
+    if (!selectedEvent) return;
+    
+    const updatedEvents = events.filter(event => event.id !== selectedEvent.id);
+    setEvents(updatedEvents);
+    setIsEditEventOpen(false);
+    setSelectedEvent(null);
+    
+    toast({
+      title: "Event Deleted",
+      description: `${selectedEvent.title} has been removed from the calendar.`,
+    });
+  };
+
+  const handleEventClick = (event: any) => {
+    setSelectedEvent({
+      ...event,
+      date: format(event.date, 'yyyy-MM-dd')
+    });
+    setIsEditEventOpen(true);
   };
 
   const getColorForPerson = (person: string) => {
@@ -134,7 +188,8 @@ const CalendarView: React.FC = () => {
             todaysEvents.map(event => (
               <div 
                 key={event.id} 
-                className={`p-3 rounded-md ${event.color} text-white`}
+                className={`p-3 rounded-md ${event.color} text-white cursor-pointer hover:opacity-90`}
+                onClick={() => handleEventClick(event)}
               >
                 <div className="font-semibold">{event.title}</div>
                 <div className="text-sm opacity-90">{event.startTime} - {event.endTime}</div>
@@ -183,8 +238,12 @@ const CalendarView: React.FC = () => {
                   {dayEvents.map(event => (
                     <div 
                       key={event.id} 
-                      className={`text-xs p-1 rounded ${event.color} text-white truncate`}
+                      className={`text-xs p-1 rounded ${event.color} text-white truncate cursor-pointer hover:opacity-90`}
                       title={`${event.title} (${event.startTime}-${event.endTime})`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEventClick(event);
+                      }}
                     >
                       {event.startTime} {event.title}
                     </div>
@@ -246,8 +305,12 @@ const CalendarView: React.FC = () => {
                     {dayEvents.slice(0, 2).map(event => (
                       <div 
                         key={event.id}
-                        className={`text-[0.65rem] truncate rounded px-1 ${event.color} text-white mb-0.5`}
+                        className={`text-[0.65rem] truncate rounded px-1 ${event.color} text-white mb-0.5 cursor-pointer hover:opacity-90`}
                         title={event.title}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEventClick(event);
+                        }}
                       >
                         {event.title}
                       </div>
@@ -446,6 +509,118 @@ const CalendarView: React.FC = () => {
               <Button onClick={handleAddEvent} disabled={newEvent.title === ''}>
                 Add Event
               </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+        
+        {/* Edit Event Dialog */}
+        <Dialog open={isEditEventOpen} onOpenChange={(open) => {
+          if (!open) setSelectedEvent(null);
+          setIsEditEventOpen(open);
+        }}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Edit Event</DialogTitle>
+            </DialogHeader>
+            {selectedEvent && (
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-title">Event Title</Label>
+                  <Input 
+                    id="edit-title" 
+                    value={selectedEvent.title} 
+                    onChange={(e) => setSelectedEvent({...selectedEvent, title: e.target.value})}
+                  />
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-date">Date</Label>
+                  <Input 
+                    id="edit-date" 
+                    type="date" 
+                    value={selectedEvent.date}
+                    onChange={(e) => setSelectedEvent({...selectedEvent, date: e.target.value})} 
+                  />
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-startTime">Start Time</Label>
+                    <Input 
+                      id="edit-startTime" 
+                      type="time" 
+                      value={selectedEvent.startTime}
+                      onChange={(e) => setSelectedEvent({...selectedEvent, startTime: e.target.value})} 
+                    />
+                  </div>
+                  
+                  <div className="grid gap-2">
+                    <Label htmlFor="edit-endTime">End Time</Label>
+                    <Input 
+                      id="edit-endTime" 
+                      type="time" 
+                      value={selectedEvent.endTime}
+                      onChange={(e) => setSelectedEvent({...selectedEvent, endTime: e.target.value})} 
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-person">Person</Label>
+                  <Select 
+                    value={selectedEvent.person} 
+                    onValueChange={(value) => setSelectedEvent({...selectedEvent, person: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select person" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Mom">Mom</SelectItem>
+                      <SelectItem value="Dad">Dad</SelectItem>
+                      <SelectItem value="Jimmy">Jimmy</SelectItem>
+                      <SelectItem value="Lisa">Lisa</SelectItem>
+                      <SelectItem value="Emma">Emma</SelectItem>
+                      <SelectItem value="Grayson">Grayson</SelectItem>
+                      <SelectItem value="All">All Family</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="edit-category">Category</Label>
+                  <Select 
+                    value={selectedEvent.category} 
+                    onValueChange={(value) => setSelectedEvent({...selectedEvent, category: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="general">General</SelectItem>
+                      <SelectItem value="work">Work</SelectItem>
+                      <SelectItem value="school">School</SelectItem>
+                      <SelectItem value="sports">Sports</SelectItem>
+                      <SelectItem value="health">Health</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
+            
+            <div className="flex justify-between">
+              <Button variant="destructive" onClick={handleDeleteEvent}>
+                <Trash className="h-4 w-4 mr-1" />
+                Delete
+              </Button>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setIsEditEventOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleEditEvent}>
+                  <Edit className="h-4 w-4 mr-1" />
+                  Save
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
