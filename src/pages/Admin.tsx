@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
-import { Edit, UserPlus, UserMinus } from "lucide-react";
+import { Edit, UserPlus, UserMinus, ArrowLeft } from "lucide-react";
 import { useFamilyStore, FamilyMember } from '@/services/familyService';
+import { Link } from 'react-router-dom';
 
 const Admin: React.FC = () => {
   const { members, addMember, updateMember, deleteMember } = useFamilyStore();
@@ -71,7 +72,15 @@ const Admin: React.FC = () => {
 
   return (
     <div className="container mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-6">Admin Dashboard</h1>
+      <div className="flex items-center mb-6">
+        <Link to="/">
+          <Button variant="ghost" size="sm" className="mr-2">
+            <ArrowLeft className="h-4 w-4 mr-1" />
+            Back to Home
+          </Button>
+        </Link>
+        <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+      </div>
       
       <Tabs defaultValue="family">
         <TabsList>

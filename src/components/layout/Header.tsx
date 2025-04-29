@@ -1,8 +1,11 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
-import { Settings } from 'lucide-react';
+import { Settings, Clock, Calendar as CalendarIcon, CloudSun } from 'lucide-react';
+import { format } from 'date-fns';
+import { useFamilyStore } from '@/services/familyService';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 interface HeaderProps {
   activeTab: string;
@@ -17,12 +20,60 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
     { id: 'home', label: 'Home Control' },
   ];
 
+  const { members } = useFamilyStore();
+  const [currentTime, setCurrentTime] = useState(new Date());
+  const [weather, setWeather] = useState({ temp: '72°', condition: 'Sunny' });
+
+  // Update time every minute
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000);
+    
+    return () => clearInterval(timer);
+  }, []);
+
+  // This would connect to a real weather API in production
+  // For now, using static mock data
+
   return (
     <header className="bg-white rounded-lg shadow-sm p-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-800">Family Hub</h1>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+        <div className="flex items-center">
+          <h1 className="text-2xl font-bold text-gray-800 mr-4">Family Hub</h1>
+          
+          <div className="flex items-center gap-4">
+            <div className="flex items-center text-gray-600">
+              <CalendarIcon className="h-4 w-4 mr-1" />
+              <span className="text-sm">{format(currentTime, 'MMM d, yyyy')}</span>
+            </div>
+            
+            <div className="flex items-center text-gray-600">
+              <Clock className="h-4 w-4 mr-1" />
+              <span className="text-sm">{format(currentTime, 'h:mm a')}</span>
+            </div>
+            
+            <div className="flex items-center text-gray-600">
+              <CloudSun className="h-4 w-4 mr-1 text-blue-500" />
+              <span className="text-sm">{weather.temp} | {weather.condition}</span>
+            </div>
+          </div>
+        </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-between md:justify-end gap-4 w-full md:w-auto">
+          <div className="flex items-center space-x-2">
+            {members.map((member) => (
+              <Avatar key={member.id} className="h-8 w-8 border-2" style={{ borderColor: member.color }}>
+                <AvatarFallback 
+                  style={{ backgroundColor: member.color }}
+                  className="text-white"
+                >
+                  {member.name.charAt(0)}
+                </AvatarFallback>
+              </Avatar>
+            ))}
+          </div>
+          
           <Link to="/admin">
             <Button variant="outline" size="sm">
               <Settings className="h-4 w-4 mr-1" />
