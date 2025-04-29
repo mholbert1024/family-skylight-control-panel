@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { format, addDays, startOfWeek, addWeeks, subWeeks, isSameDay, getDay } from 'date-fns';
+import { format, addDays, startOfWeek, addWeeks, subWeeks, isSameDay, getDay, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight, Plus } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Calendar } from '@/components/ui/calendar';
 
 // Mock calendar data - this would come from Google Calendar/CalDAV in real implementation
 const mockEvents = [
@@ -58,6 +59,7 @@ const CalendarView: React.FC = () => {
   const [view, setView] = useState<'day' | 'week' | 'month'>('week');
   const [events, setEvents] = useState(mockEvents);
   const [isAddEventOpen, setIsAddEventOpen] = useState(false);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [newEvent, setNewEvent] = useState({
     title: '',
     date: format(new Date(), 'yyyy-MM-dd'),
@@ -102,24 +104,32 @@ const CalendarView: React.FC = () => {
       'Lisa': 'bg-family-pink',
       'Emma': 'bg-family-orange',
       'All': 'bg-family-green',
+      'Grayson': 'bg-family-blue',
     };
     return colorMap[person] || 'bg-gray-400';
   };
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  
+  // Handle selecting a specific day
+  const handleDaySelect = (date: Date) => {
+    setSelectedDate(date);
+    setCurrentDate(date);
+    setView('day');
+  };
 
   const renderDayView = () => {
     const todaysEvents = events.filter(event => 
-      isSameDay(event.date, currentDate)
+      isSameDay(event.date, selectedDate)
     ).sort((a, b) => a.startTime.localeCompare(b.startTime));
 
     return (
       <div className="bg-white rounded-lg shadow p-4">
-        <h2 className="text-xl font-bold mb-4">{format(currentDate, 'MMMM d, yyyy')}</h2>
+        <h2 className="text-xl font-bold mb-4">{format(selectedDate, 'MMMM d, yyyy')}</h2>
         
         <div className="space-y-2">
           {todaysEvents.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">No events scheduled for today</p>
+            <p className="text-muted-foreground text-center py-4">No events scheduled for this day</p>
           ) : (
             todaysEvents.map(event => (
               <div 
@@ -153,12 +163,16 @@ const CalendarView: React.FC = () => {
           {weekDates.map((date, i) => {
             const dayEvents = events.filter(event => isSameDay(event.date, date));
             const isCurrentDay = isSameDay(date, new Date());
+            const isSelectedDay = isSameDay(date, selectedDate);
             
             return (
               <div 
                 key={i} 
-                className={`min-h-[120px] p-2 border-r last:border-r-0 border-b ${
+                onClick={() => handleDaySelect(date)}
+                className={`min-h-[120px] p-2 border-r last:border-r-0 border-b cursor-pointer transition-colors hover:bg-blue-50 ${
                   isCurrentDay ? 'bg-blue-50' : ''
+                } ${
+                  isSelectedDay ? 'bg-blue-100' : ''
                 }`}
               >
                 <div className={`text-sm mb-1 font-medium ${isCurrentDay ? 'text-blue-600' : ''}`}>
@@ -184,17 +198,87 @@ const CalendarView: React.FC = () => {
     );
   };
   
+  const renderMonthView = () => {
+    const firstDayOfMonth = startOfMonth(currentDate);
+    const lastDayOfMonth = endOfMonth(currentDate);
+    const startDateOfCalendar = startOfWeek(firstDayOfMonth);
+    
+    // Create array of 42 days (6 weeks) to ensure we have enough days to fill the calendar grid
+    const daysToDisplay = Array.from({ length: 42 }).map((_, i) => addDays(startDateOfCalendar, i));
+    
+    return (
+      <div className="bg-white rounded-lg shadow">
+        <h2 className="text-xl font-bold p-4">{format(currentDate, 'MMMM yyyy')}</h2>
+        
+        <div className="grid grid-cols-7 text-center border-b">
+          {weekDays.map(day => (
+            <div key={day} className="p-2 font-semibold">{day}</div>
+          ))}
+        </div>
+        
+        <div className="grid grid-cols-7">
+          {daysToDisplay.map((date, i) => {
+            const isCurrentMonth = date.getMonth() === currentDate.getMonth();
+            const isToday = isSameDay(date, new Date());
+            const isSelected = isSameDay(date, selectedDate);
+            const dayEvents = events.filter(event => isSameDay(event.date, date));
+            const hasEvents = dayEvents.length > 0;
+            
+            return (
+              <div 
+                key={i} 
+                onClick={() => handleDaySelect(date)}
+                className={`h-24 p-1 border-r border-b last:border-r-0 relative cursor-pointer
+                  ${!isCurrentMonth ? 'opacity-40 bg-gray-50' : ''}
+                  ${isToday ? 'bg-blue-50' : ''}
+                  ${isSelected ? 'bg-blue-100' : ''}
+                  hover:bg-blue-50 transition-colors
+                `}
+              >
+                <div className={`text-sm font-medium rounded-full w-6 h-6 flex items-center justify-center
+                  ${isToday ? 'bg-blue-500 text-white' : ''}
+                `}>
+                  {format(date, 'd')}
+                </div>
+                
+                {hasEvents && (
+                  <div className="mt-1 overflow-hidden max-h-14">
+                    {dayEvents.slice(0, 2).map(event => (
+                      <div 
+                        key={event.id}
+                        className={`text-[0.65rem] truncate rounded px-1 ${event.color} text-white mb-0.5`}
+                        title={event.title}
+                      >
+                        {event.title}
+                      </div>
+                    ))}
+                    {dayEvents.length > 2 && (
+                      <div className="text-[0.65rem] text-gray-500">
+                        +{dayEvents.length - 2} more
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+  
   // Navigation functions
   const previousPeriod = () => {
     switch (view) {
       case 'day':
         setCurrentDate(prev => addDays(prev, -1));
+        setSelectedDate(prev => addDays(prev, -1));
         break;
       case 'week':
         setCurrentDate(prev => subWeeks(prev, 1));
         break;
       case 'month':
-        // We'd implement this in a real application
+        setCurrentDate(prev => subMonths(prev, 1));
         break;
     }
   };
@@ -203,12 +287,13 @@ const CalendarView: React.FC = () => {
     switch (view) {
       case 'day':
         setCurrentDate(prev => addDays(prev, 1));
+        setSelectedDate(prev => addDays(prev, 1));
         break;
       case 'week':
         setCurrentDate(prev => addWeeks(prev, 1));
         break;
       case 'month':
-        // We'd implement this in a real application
+        setCurrentDate(prev => addMonths(prev, 1));
         break;
     }
   };
@@ -217,7 +302,10 @@ const CalendarView: React.FC = () => {
     <div className="flex flex-col space-y-4">
       <div className="flex justify-between items-center">
         <div>
-          <Button variant="ghost" size="sm" onClick={() => setCurrentDate(new Date())}>
+          <Button variant="ghost" size="sm" onClick={() => {
+            setCurrentDate(new Date());
+            setSelectedDate(new Date());
+          }}>
             Today
           </Button>
         </div>
@@ -246,6 +334,13 @@ const CalendarView: React.FC = () => {
             onClick={() => setView('week')}
           >
             Week
+          </Button>
+          <Button 
+            variant={view === 'month' ? 'default' : 'outline'} 
+            size="sm"
+            onClick={() => setView('month')}
+          >
+            Month
           </Button>
         </div>
         
@@ -318,6 +413,7 @@ const CalendarView: React.FC = () => {
                     <SelectItem value="Jimmy">Jimmy</SelectItem>
                     <SelectItem value="Lisa">Lisa</SelectItem>
                     <SelectItem value="Emma">Emma</SelectItem>
+                    <SelectItem value="Grayson">Grayson</SelectItem>
                     <SelectItem value="All">All Family</SelectItem>
                   </SelectContent>
                 </Select>
@@ -355,7 +451,9 @@ const CalendarView: React.FC = () => {
         </Dialog>
       </div>
       
-      {view === 'day' ? renderDayView() : renderWeekView()}
+      {view === 'day' && renderDayView()}
+      {view === 'week' && renderWeekView()}
+      {view === 'month' && renderMonthView()}
       
       <div className="mt-4">
         <h3 className="font-medium mb-2">Family Members</h3>
@@ -363,6 +461,7 @@ const CalendarView: React.FC = () => {
           <Badge className="bg-family-purple">Mom</Badge>
           <Badge className="bg-family-blue">Dad</Badge>
           <Badge className="bg-family-blue">Jimmy</Badge>
+          <Badge className="bg-family-blue">Grayson</Badge>
           <Badge className="bg-family-pink">Lisa</Badge>
           <Badge className="bg-family-orange">Emma</Badge>
           <Badge className="bg-family-green">All Family</Badge>

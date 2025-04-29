@@ -24,7 +24,7 @@ const mockTasks: Task[] = [
   { 
     id: 1, 
     title: 'Take out the trash', 
-    assignedTo: 'Jimmy', 
+    assignedTo: 'Grayson', 
     dueDate: '2025-04-30',
     completed: false,
     recurring: 'weekly',
@@ -33,7 +33,7 @@ const mockTasks: Task[] = [
   { 
     id: 2, 
     title: 'Clean bedroom', 
-    assignedTo: 'Lisa', 
+    assignedTo: 'Grayson', 
     dueDate: '2025-04-30',
     completed: false,
     recurring: 'daily',
@@ -42,7 +42,7 @@ const mockTasks: Task[] = [
   { 
     id: 3, 
     title: 'Feed the dog', 
-    assignedTo: 'Emma', 
+    assignedTo: 'Grayson', 
     dueDate: '2025-04-29',
     completed: true,
     recurring: 'daily',
@@ -51,11 +51,38 @@ const mockTasks: Task[] = [
   { 
     id: 4, 
     title: 'Homework', 
-    assignedTo: 'All Kids', 
+    assignedTo: 'Grayson', 
     dueDate: '2025-04-29',
     completed: false,
     recurring: 'daily',
     points: 15
+  },
+  { 
+    id: 5, 
+    title: 'Schedule doctor appointment', 
+    assignedTo: 'Mom', 
+    dueDate: '2025-04-30',
+    completed: false,
+    recurring: 'none',
+    points: 0
+  },
+  { 
+    id: 6, 
+    title: 'Pay bills', 
+    assignedTo: 'Dad', 
+    dueDate: '2025-05-01',
+    completed: false,
+    recurring: 'monthly',
+    points: 0
+  },
+  { 
+    id: 7, 
+    title: 'Grocery shopping', 
+    assignedTo: 'Mom', 
+    dueDate: '2025-04-29',
+    completed: true,
+    recurring: 'weekly',
+    points: 0
   },
 ];
 
@@ -63,13 +90,11 @@ const TasksView: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>(mockTasks);
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false);
   const [points, setPoints] = useState<Record<string, number>>({
-    'Jimmy': 25,
-    'Lisa': 30,
-    'Emma': 35
+    'Grayson': 35,
   });
   const [newTask, setNewTask] = useState<Omit<Task, 'id' | 'completed'>>({
     title: '',
-    assignedTo: 'Jimmy',
+    assignedTo: 'Grayson',
     dueDate: '2025-04-30',
     recurring: 'none',
     points: 5
@@ -83,14 +108,14 @@ const TasksView: React.FC = () => {
       dueDate: newTask.dueDate,
       completed: false,
       recurring: newTask.recurring,
-      points: newTask.points
+      points: newTask.assignedTo === 'Grayson' ? newTask.points : 0
     };
     
     setTasks([...tasks, task]);
     setIsAddTaskOpen(false);
     setNewTask({
       title: '',
-      assignedTo: 'Jimmy',
+      assignedTo: 'Grayson',
       dueDate: '2025-04-30',
       recurring: 'none',
       points: 5
@@ -100,8 +125,8 @@ const TasksView: React.FC = () => {
   const toggleTaskCompletion = (taskId: number) => {
     setTasks(tasks.map(task => {
       if (task.id === taskId) {
-        // Add points when completing a task
-        if (!task.completed && ['Jimmy', 'Lisa', 'Emma'].includes(task.assignedTo)) {
+        // Add points when completing a task for Grayson
+        if (!task.completed && task.assignedTo === 'Grayson') {
           setPoints(prev => ({
             ...prev,
             [task.assignedTo]: (prev[task.assignedTo] || 0) + task.points
@@ -114,9 +139,13 @@ const TasksView: React.FC = () => {
     }));
   };
   
-  // Filter tasks by completion status
-  const incompleteTasks = tasks.filter(task => !task.completed);
-  const completedTasks = tasks.filter(task => task.completed);
+  // Filter tasks for Grayson
+  const graysonIncompleteTasks = tasks.filter(task => !task.completed && task.assignedTo === 'Grayson');
+  const graysonCompletedTasks = tasks.filter(task => task.completed && task.assignedTo === 'Grayson');
+  
+  // Filter tasks for parents
+  const parentIncompleteTasks = tasks.filter(task => !task.completed && task.assignedTo !== 'Grayson');
+  const parentCompletedTasks = tasks.filter(task => task.completed && task.assignedTo !== 'Grayson');
 
   return (
     <div className="flex flex-col space-y-4">
@@ -149,16 +178,17 @@ const TasksView: React.FC = () => {
                 <Label htmlFor="assignedTo">Assigned To</Label>
                 <Select 
                   value={newTask.assignedTo}
-                  onValueChange={(value) => setNewTask({...newTask, assignedTo: value})}
+                  onValueChange={(value) => setNewTask({
+                    ...newTask, 
+                    assignedTo: value,
+                    points: ['Mom', 'Dad'].includes(value) ? 0 : newTask.points
+                  })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select person" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Jimmy">Jimmy</SelectItem>
-                    <SelectItem value="Lisa">Lisa</SelectItem>
-                    <SelectItem value="Emma">Emma</SelectItem>
-                    <SelectItem value="All Kids">All Kids</SelectItem>
+                    <SelectItem value="Grayson">Grayson</SelectItem>
                     <SelectItem value="Mom">Mom</SelectItem>
                     <SelectItem value="Dad">Dad</SelectItem>
                   </SelectContent>
@@ -195,16 +225,18 @@ const TasksView: React.FC = () => {
                 </Select>
               </div>
               
-              <div className="grid gap-2">
-                <Label htmlFor="points">Points</Label>
-                <Input 
-                  id="points" 
-                  type="number" 
-                  min="1"
-                  value={newTask.points}
-                  onChange={(e) => setNewTask({...newTask, points: parseInt(e.target.value)})}
-                />
-              </div>
+              {newTask.assignedTo === 'Grayson' && (
+                <div className="grid gap-2">
+                  <Label htmlFor="points">Points</Label>
+                  <Input 
+                    id="points" 
+                    type="number" 
+                    min="1"
+                    value={newTask.points}
+                    onChange={(e) => setNewTask({...newTask, points: parseInt(e.target.value) || 0})}
+                  />
+                </div>
+              )}
             </div>
             
             <div className="flex justify-between">
@@ -219,67 +251,58 @@ const TasksView: React.FC = () => {
         </Dialog>
       </div>
       
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Point totals */}
-        <div className="col-span-1 sm:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
-          {Object.entries(points).map(([person, total]) => (
-            <div key={person} className="bg-white p-4 rounded-lg shadow-sm">
-              <h3 className="font-medium text-lg">{person}</h3>
-              <div className="text-2xl font-bold text-family-purple">{total} points</div>
-            </div>
-          ))}
-        </div>
-        
-        {/* Tasks list */}
-        <div className="col-span-1 sm:col-span-2">
-          <div className="bg-white rounded-lg shadow-sm p-4">
-            <h3 className="font-medium mb-4">To-Do ({incompleteTasks.length})</h3>
-            {incompleteTasks.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4">All tasks completed! 🎉</p>
-            ) : (
-              <div className="space-y-2">
-                {incompleteTasks.map(task => (
-                  <div 
-                    key={task.id} 
-                    className="flex items-start justify-between p-3 bg-gray-50 rounded-md border"
-                  >
-                    <div className="flex items-start gap-3">
-                      <Checkbox 
-                        checked={task.completed} 
-                        onCheckedChange={() => toggleTaskCompletion(task.id)} 
-                        className="mt-1"
-                      />
-                      <div>
-                        <div className="font-medium">{task.title}</div>
-                        <div className="text-sm text-muted-foreground flex gap-2 mt-1 flex-wrap">
-                          <span>Assigned to: {task.assignedTo}</span>
-                          <span>Due: {task.dueDate}</span>
-                          {task.recurring !== 'none' && (
-                            <Badge variant="outline" className="text-xs">
-                              {task.recurring}
-                            </Badge>
-                          )}
-                          <Badge className="bg-family-purple">
-                            {task.points} pts
+      {/* Grayson's points display */}
+      <div className="bg-blue-50 p-4 rounded-lg shadow-sm mb-4">
+        <h3 className="font-medium text-lg">Grayson's Points</h3>
+        <div className="text-2xl font-bold text-family-blue">{points['Grayson'] || 0} points</div>
+      </div>
+      
+      {/* Tasks columns - Grayson and Parents */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Grayson's Tasks Column */}
+        <div className="bg-white rounded-lg shadow-sm p-4 border-t-4 border-family-blue">
+          <h3 className="font-medium mb-4">Grayson's Tasks ({graysonIncompleteTasks.length})</h3>
+          {graysonIncompleteTasks.length === 0 ? (
+            <p className="text-muted-foreground text-center py-4">All tasks completed! 🎉</p>
+          ) : (
+            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+              {graysonIncompleteTasks.map(task => (
+                <div 
+                  key={task.id} 
+                  className="flex items-start justify-between p-3 bg-blue-50 rounded-md border"
+                >
+                  <div className="flex items-start gap-3">
+                    <Checkbox 
+                      checked={task.completed} 
+                      onCheckedChange={() => toggleTaskCompletion(task.id)} 
+                      className="mt-1"
+                    />
+                    <div>
+                      <div className="font-medium">{task.title}</div>
+                      <div className="text-sm text-muted-foreground flex gap-2 mt-1 flex-wrap">
+                        <span>Due: {task.dueDate}</span>
+                        {task.recurring !== 'none' && (
+                          <Badge variant="outline" className="text-xs">
+                            {task.recurring}
                           </Badge>
-                        </div>
+                        )}
+                        <Badge className="bg-family-blue">
+                          {task.points} pts
+                        </Badge>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-        
-        <div className="col-span-1">
-          <div className="bg-white rounded-lg shadow-sm p-4">
-            <h3 className="font-medium mb-4">Completed ({completedTasks.length})</h3>
-            {completedTasks.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4">No completed tasks</p>
-            ) : (
-              <div className="space-y-2">
-                {completedTasks.map(task => (
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {/* Completed Tasks */}
+          {graysonCompletedTasks.length > 0 && (
+            <div className="mt-4">
+              <h4 className="text-sm font-medium text-muted-foreground mb-2">Completed ({graysonCompletedTasks.length})</h4>
+              <div className="space-y-2 max-h-[150px] overflow-y-auto">
+                {graysonCompletedTasks.map(task => (
                   <div 
                     key={task.id} 
                     className="flex items-start gap-3 p-3 bg-gray-50 rounded-md border opacity-70"
@@ -287,15 +310,75 @@ const TasksView: React.FC = () => {
                     <CheckSquare className="h-4 w-4 mt-1 text-green-600" />
                     <div>
                       <div className="font-medium line-through">{task.title}</div>
-                      <div className="text-sm text-muted-foreground">
-                        By: {task.assignedTo}
+                      <div className="text-xs text-muted-foreground">
+                        {task.points} points
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
-            )}
-          </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Parents' Tasks Column */}
+        <div className="bg-white rounded-lg shadow-sm p-4 border-t-4 border-family-purple">
+          <h3 className="font-medium mb-4">Parents' Tasks ({parentIncompleteTasks.length})</h3>
+          {parentIncompleteTasks.length === 0 ? (
+            <p className="text-muted-foreground text-center py-4">No tasks to do! 🎉</p>
+          ) : (
+            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+              {parentIncompleteTasks.map(task => (
+                <div 
+                  key={task.id} 
+                  className="flex items-start justify-between p-3 bg-purple-50 rounded-md border"
+                >
+                  <div className="flex items-start gap-3">
+                    <Checkbox 
+                      checked={task.completed} 
+                      onCheckedChange={() => toggleTaskCompletion(task.id)} 
+                      className="mt-1"
+                    />
+                    <div>
+                      <div className="font-medium">{task.title}</div>
+                      <div className="text-sm text-muted-foreground flex gap-2 mt-1 flex-wrap">
+                        <span>Assigned to: {task.assignedTo}</span>
+                        <span>Due: {task.dueDate}</span>
+                        {task.recurring !== 'none' && (
+                          <Badge variant="outline" className="text-xs">
+                            {task.recurring}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          
+          {/* Completed Tasks */}
+          {parentCompletedTasks.length > 0 && (
+            <div className="mt-4">
+              <h4 className="text-sm font-medium text-muted-foreground mb-2">Completed ({parentCompletedTasks.length})</h4>
+              <div className="space-y-2 max-h-[150px] overflow-y-auto">
+                {parentCompletedTasks.map(task => (
+                  <div 
+                    key={task.id} 
+                    className="flex items-start gap-3 p-3 bg-gray-50 rounded-md border opacity-70"
+                  >
+                    <CheckSquare className="h-4 w-4 mt-1 text-green-600" />
+                    <div>
+                      <div className="font-medium line-through">{task.title}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {task.assignedTo}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
