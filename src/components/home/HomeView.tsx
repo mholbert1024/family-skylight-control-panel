@@ -1,11 +1,10 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { 
   Lightbulb, 
   ThermometerSun, 
   DoorClosed, 
-  GarageDoor, 
+  Warehouse, 
   AlarmClock,
   House
 } from 'lucide-react';
@@ -111,7 +110,7 @@ const HomeView: React.FC = () => {
                 className={`justify-start h-12 ${deviceStates.garageDoor === 'closed' ? 'border-green-500 text-green-700 bg-green-50' : 'border-red-500 text-red-700 bg-red-50'}`}
                 onClick={() => toggleDevice('garageDoor', deviceStates.garageDoor === 'closed' ? 'open' : 'closed')}
               >
-                <GarageDoor className="h-4 w-4 mr-3" />
+                <Warehouse className="h-4 w-4 mr-3" />
                 Garage Door: {deviceStates.garageDoor}
               </Button>
               

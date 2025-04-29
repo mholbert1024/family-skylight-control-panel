@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { LightbulbOff, Lightbulb, DoorClosed, DoorOpen, GarageDoor, AlarmClock, ThermometerSun } from 'lucide-react';
+import { LightbulbOff, Lightbulb, DoorClosed, DoorOpen, Warehouse, AlarmClock, ThermometerSun } from 'lucide-react';
 
 const Footer: React.FC = () => {
   // These would be connected to Home Assistant in a real implementation
@@ -38,7 +38,7 @@ const Footer: React.FC = () => {
           className={`h-20 w-full flex flex-col items-center justify-center ${!garageClosed ? 'bg-red-50' : ''}`}
           onClick={() => setGarageClosed(!garageClosed)}
         >
-          <GarageDoor className={`h-6 w-6 mb-2 ${garageClosed ? 'text-green-500' : 'text-red-500'}`} />
+          <Warehouse className={`h-6 w-6 mb-2 ${garageClosed ? 'text-green-500' : 'text-red-500'}`} />
           {garageClosed ? 'Garage Closed' : 'Garage Open'}
         </Button>
         
