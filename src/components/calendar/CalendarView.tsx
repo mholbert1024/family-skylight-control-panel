@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { toast } from '@/components/ui/use-toast';
 import { useFamilyStore } from '@/services/familyService';
+import { useTheme } from '@/providers/ThemeProvider';
 
 // Mock calendar data - this would come from Google Calendar/CalDAV in real implementation
 const mockEvents = [
@@ -64,6 +65,7 @@ const CalendarView: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
   const { members } = useFamilyStore();
+  const { theme } = useTheme();
   const [newEvent, setNewEvent] = useState({
     title: '',
     date: format(new Date(), 'yyyy-MM-dd'),
@@ -75,7 +77,7 @@ const CalendarView: React.FC = () => {
   });
 
   const handleAddEvent = () => {
-    const eventDate = parseISO(newEvent.date); // Fix date parsing issue
+    const eventDate = parseISO(newEvent.date); 
     const memberColor = getColorForPerson(newEvent.person);
     
     const event = {
@@ -194,8 +196,8 @@ const CalendarView: React.FC = () => {
     ).sort((a, b) => a.startTime.localeCompare(b.startTime));
 
     return (
-      <div className="bg-white rounded-lg shadow p-4">
-        <h2 className="text-xl font-bold mb-4">{format(selectedDate, 'MMMM d, yyyy')}</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <h2 className="text-xl font-bold mb-4 dark:text-white">{format(selectedDate, 'MMMM d, yyyy')}</h2>
         
         <div className="space-y-2">
           {todaysEvents.length === 0 ? (
@@ -204,8 +206,11 @@ const CalendarView: React.FC = () => {
             todaysEvents.map(event => (
               <div 
                 key={event.id} 
-                className="p-3 rounded-md text-white cursor-pointer hover:opacity-90"
-                style={{ backgroundColor: event.color }}
+                className="p-3 rounded-md cursor-pointer hover:opacity-90"
+                style={{ 
+                  backgroundColor: event.color,
+                  color: theme === 'light' ? 'black' : 'white'
+                }}
                 onClick={() => handleEventClick(event)}
               >
                 <div className="font-semibold">{event.title}</div>
@@ -221,44 +226,41 @@ const CalendarView: React.FC = () => {
 
   const renderWeekView = () => {
     const startDate = startOfWeek(currentDate);
-    const weekDates = Array.from({ length: 7 }).map((_, i) => addDays(startDate, i));
+    
+    // Create the 7-day grid with 4 days on top and 3 days on bottom
+    const topRowDates = Array.from({ length: 4 }).map((_, i) => addDays(startDate, i));
+    const bottomRowDates = Array.from({ length: 3 }).map((_, i) => addDays(startDate, i + 4));
+    const nextWeekStart = addWeeks(startDate, 1);
     
     return (
-      <div className="bg-white rounded-lg shadow">
-        {/* Week view header with day names and dates */}
-        <div className="grid grid-cols-7 border-b">
-          {weekDates.map((date, i) => {
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+        {/* Week view header with column layout - 4 columns on top */}
+        <div className="grid grid-cols-4 border-b dark:border-gray-700">
+          {topRowDates.map((date, i) => {
             const isToday = isSameDay(date, new Date());
             const dayEvents = events.filter(event => isSameDay(event.date, date));
             
             return (
               <div 
                 key={i} 
-                className={`p-3 text-center border-r last:border-r-0 ${isToday ? 'bg-blue-50' : ''}`}
+                className={`p-3 text-left border-r dark:border-gray-700 last:border-r-0 ${
+                  isToday ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                }`}
                 onClick={() => handleDaySelect(date)}
               >
-                <div className="text-sm text-gray-500">{format(date, 'EEE')}</div>
-                <div className={`text-xl font-medium ${isToday ? 'text-blue-600' : ''}`}>{format(date, 'd')}</div>
+                <div className="flex items-baseline gap-1">
+                  <span className="text-lg font-bold dark:text-white">{format(date, 'EEE')}</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{format(date, 'd')}</span>
+                </div>
                 <div className="text-xs text-gray-400">{dayEvents.length} events</div>
-                <button 
-                  className="mt-1 text-xs text-blue-500 hover:underline"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedDate(date);
-                    setNewEvent({...newEvent, date: format(date, 'yyyy-MM-dd')});
-                    setIsAddEventOpen(true);
-                  }}
-                >
-                  + Add Event
-                </button>
               </div>
             );
           })}
         </div>
         
-        {/* Week view content with events */}
-        <div className="flex min-h-[400px] max-h-[calc(100vh-300px)]">
-          {weekDates.map((date, i) => {
+        {/* Week view content with events - 4 columns */}
+        <div className="grid grid-cols-4 min-h-[250px] max-h-[250px]">
+          {topRowDates.map((date, i) => {
             const dayEvents = events.filter(event => isSameDay(event.date, date));
             const isToday = isSameDay(date, new Date());
             const isSelectedDay = isSameDay(date, selectedDate);
@@ -267,24 +269,24 @@ const CalendarView: React.FC = () => {
               <div 
                 key={i} 
                 onClick={() => handleDaySelect(date)}
-                className={`flex-1 border-r last:border-r-0 flex flex-col ${
-                  isToday ? 'bg-blue-50' : ''
+                className={`border-r dark:border-gray-700 last:border-r-0 flex flex-col ${
+                  isToday ? 'bg-blue-50 dark:bg-blue-900/20' : ''
                 } ${
-                  isSelectedDay ? 'bg-blue-100' : ''
+                  isSelectedDay ? 'bg-blue-100 dark:bg-blue-900/40' : ''
                 }`}
               >
                 <div className="flex-1 p-2 space-y-2 overflow-y-auto">
                   {dayEvents.sort((a, b) => a.startTime.localeCompare(b.startTime)).map(event => (
                     <div 
                       key={event.id} 
-                      className="p-2 rounded text-white cursor-pointer hover:opacity-90"
+                      className="p-2 rounded text-black dark:text-white cursor-pointer hover:opacity-90"
                       style={{ backgroundColor: event.color }}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleEventClick(event);
                       }}
                     >
-                      <div className="text-xs">{event.startTime} - {event.endTime}</div>
+                      <div className="text-xs opacity-75">{event.startTime} - {event.endTime}</div>
                       <div className="font-medium">{event.title}</div>
                     </div>
                   ))}
@@ -292,6 +294,81 @@ const CalendarView: React.FC = () => {
               </div>
             );
           })}
+        </div>
+        
+        {/* Bottom row - 3 columns + next week info */}
+        <div className="grid grid-cols-4 border-t dark:border-gray-700">
+          {bottomRowDates.map((date, i) => {
+            const isToday = isSameDay(date, new Date());
+            const dayEvents = events.filter(event => isSameDay(event.date, date));
+            
+            return (
+              <div 
+                key={i} 
+                className={`p-3 text-left border-r dark:border-gray-700 ${
+                  isToday ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                }`}
+                onClick={() => handleDaySelect(date)}
+              >
+                <div className="flex items-baseline gap-1">
+                  <span className="text-lg font-bold dark:text-white">{format(date, 'EEE')}</span>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">{format(date, 'd')}</span>
+                </div>
+                <div className="text-xs text-gray-400">{dayEvents.length} events</div>
+              </div>
+            );
+          })}
+          
+          {/* Next week preview cell */}
+          <div className="p-3 text-left">
+            <div className="text-lg font-bold dark:text-white">Next Week</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              {format(nextWeekStart, 'MMM d')} - {format(addDays(nextWeekStart, 6), 'MMM d')}
+            </div>
+          </div>
+        </div>
+        
+        {/* Bottom row event content - 3 columns + next week */}
+        <div className="grid grid-cols-4 min-h-[250px] max-h-[250px]">
+          {bottomRowDates.map((date, i) => {
+            const dayEvents = events.filter(event => isSameDay(event.date, date));
+            const isToday = isSameDay(date, new Date());
+            const isSelectedDay = isSameDay(date, selectedDate);
+            
+            return (
+              <div 
+                key={i} 
+                onClick={() => handleDaySelect(date)}
+                className={`border-r dark:border-gray-700 flex flex-col ${
+                  isToday ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                } ${
+                  isSelectedDay ? 'bg-blue-100 dark:bg-blue-900/40' : ''
+                }`}
+              >
+                <div className="flex-1 p-2 space-y-2 overflow-y-auto">
+                  {dayEvents.sort((a, b) => a.startTime.localeCompare(b.startTime)).map(event => (
+                    <div 
+                      key={event.id} 
+                      className="p-2 rounded text-black dark:text-white cursor-pointer hover:opacity-90"
+                      style={{ backgroundColor: event.color }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEventClick(event);
+                      }}
+                    >
+                      <div className="text-xs opacity-75">{event.startTime} - {event.endTime}</div>
+                      <div className="font-medium">{event.title}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+          
+          {/* Next week preview content */}
+          <div className="p-2 bg-gray-50 dark:bg-gray-700/30">
+            {/* This cell can be used to show preview of next week's events */}
+          </div>
         </div>
       </div>
     );
@@ -306,12 +383,12 @@ const CalendarView: React.FC = () => {
     const daysToDisplay = Array.from({ length: 42 }).map((_, i) => addDays(startDateOfCalendar, i));
     
     return (
-      <div className="bg-white rounded-lg shadow">
-        <h2 className="text-xl font-bold p-4">{format(currentDate, 'MMMM yyyy')}</h2>
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+        <h2 className="text-xl font-bold p-4 dark:text-white">{format(currentDate, 'MMMM yyyy')}</h2>
         
-        <div className="grid grid-cols-7 text-center border-b">
+        <div className="grid grid-cols-7 text-center border-b dark:border-gray-700">
           {weekDays.map(day => (
-            <div key={day} className="p-2 font-semibold">{day}</div>
+            <div key={day} className="p-2 font-semibold dark:text-white">{day}</div>
           ))}
         </div>
         
@@ -327,17 +404,20 @@ const CalendarView: React.FC = () => {
               <div 
                 key={i} 
                 onClick={() => handleDaySelect(date)}
-                className={`h-24 p-1 border-r border-b last:border-r-0 relative cursor-pointer
-                  ${!isCurrentMonth ? 'opacity-40 bg-gray-50' : ''}
-                  ${isToday ? 'bg-blue-50' : ''}
-                  ${isSelected ? 'bg-blue-100' : ''}
-                  hover:bg-blue-50 transition-colors
+                className={`h-24 p-1 border-r border-b dark:border-gray-700 last:border-r-0 relative cursor-pointer
+                  ${!isCurrentMonth ? 'opacity-40 bg-gray-50 dark:bg-gray-700/50' : ''}
+                  ${isToday ? 'bg-blue-50 dark:bg-blue-900/20' : ''}
+                  ${isSelected ? 'bg-blue-100 dark:bg-blue-900/40' : ''}
+                  hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors
                 `}
               >
-                <div className={`text-sm font-medium rounded-full w-6 h-6 flex items-center justify-center
-                  ${isToday ? 'bg-blue-500 text-white' : ''}
-                `}>
-                  {format(date, 'd')}
+                {/* Date number in the upper right corner */}
+                <div className="flex justify-end">
+                  <div className={`text-md font-medium rounded-full w-7 h-7 flex items-center justify-center
+                    ${isToday ? 'bg-blue-500 text-white' : 'dark:text-white'}
+                  `}>
+                    {format(date, 'd')}
+                  </div>
                 </div>
                 
                 {hasEvents && (
@@ -345,19 +425,31 @@ const CalendarView: React.FC = () => {
                     {dayEvents.slice(0, 2).map(event => (
                       <div 
                         key={event.id}
-                        className="text-[0.65rem] truncate rounded px-1 text-white mb-0.5 cursor-pointer hover:opacity-90"
-                        style={{ backgroundColor: event.color }}
-                        title={event.title}
+                        className="flex items-center text-sm mb-1 cursor-pointer hover:opacity-90 rounded px-1 overflow-hidden"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleEventClick(event);
                         }}
                       >
-                        {event.title}
+                        {/* Time in grey on the left */}
+                        <span className="text-gray-500 dark:text-gray-400 text-xs mr-1 whitespace-nowrap">
+                          {event.startTime}
+                        </span>
+                        
+                        {/* Event title with color background */}
+                        <div 
+                          className="flex-1 truncate rounded px-1 py-0.5 text-sm"
+                          style={{ 
+                            backgroundColor: event.color,
+                            color: theme === 'light' ? 'black' : 'white'
+                          }}
+                        >
+                          {event.title}
+                        </div>
                       </div>
                     ))}
                     {dayEvents.length > 2 && (
-                      <div className="text-[0.65rem] text-gray-500">
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
                         +{dayEvents.length - 2} more
                       </div>
                     )}

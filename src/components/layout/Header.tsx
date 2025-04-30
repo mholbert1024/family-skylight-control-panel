@@ -6,6 +6,7 @@ import { Settings, Clock, Calendar as CalendarIcon, CloudSun } from 'lucide-reac
 import { format } from 'date-fns';
 import { useFamilyStore } from '@/services/familyService';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import ThemeToggle from '../theme/ThemeToggle';
 
 interface HeaderProps {
   activeTab: string;
@@ -33,29 +34,28 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
     return () => clearInterval(timer);
   }, []);
 
-  // This would connect to a real weather API in production
-  // For now, using static mock data
-
   return (
-    <header className="bg-white rounded-lg shadow-sm p-4">
+    <header className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
         <div className="flex items-center">
+          {/* Updated time and date with larger time */}
           <div className="flex items-center gap-4">
-            <div className="flex items-center text-gray-700">
-              <Clock className="h-4 w-4 mr-1" />
-              <span className="text-lg font-medium">{format(currentTime, 'h:mm a')}</span>
+            <div className="flex items-center text-gray-700 dark:text-gray-200">
+              <Clock className="h-5 w-5 mr-1" />
+              <span className="text-xl font-bold">{format(currentTime, 'h:mm a')}</span>
             </div>
             
-            <div className="flex items-center text-gray-600">
+            <div className="flex items-center text-gray-600 dark:text-gray-300">
               <CalendarIcon className="h-4 w-4 mr-1" />
-              <span className="text-sm font-medium">{format(currentTime, 'MMM d, yyyy')}</span>
-            </div>
-            
-            <div className="flex items-center text-gray-600">
-              <CloudSun className="h-4 w-4 mr-1 text-blue-500" />
-              <span className="text-sm">{weather.temp} | {weather.condition}</span>
+              <span className="text-md">{format(currentTime, 'MMM d, yyyy')}</span>
             </div>
           </div>
+        </div>
+        
+        {/* Centered weather */}
+        <div className="flex items-center justify-center text-gray-600 dark:text-gray-300 mx-auto md:mx-0">
+          <CloudSun className="h-5 w-5 mr-1 text-blue-500" />
+          <span className="text-md">{weather.temp} | {weather.condition}</span>
         </div>
         
         <div className="flex items-center justify-between md:justify-end gap-4 w-full md:w-auto">
@@ -72,12 +72,16 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
             ))}
           </div>
           
-          <Link to="/admin">
-            <Button variant="outline" size="sm">
-              <Settings className="h-4 w-4 mr-1" />
-              Admin
-            </Button>
-          </Link>
+          <div className="flex items-center space-x-2">
+            <ThemeToggle />
+            
+            <Link to="/admin">
+              <Button variant="outline" size="sm">
+                <Settings className="h-4 w-4 mr-1" />
+                Admin
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
       
