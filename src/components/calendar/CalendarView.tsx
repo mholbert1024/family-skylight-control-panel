@@ -1,14 +1,15 @@
+
 import React, { useState } from 'react';
-import { format, addDays, startOfWeek, addWeeks, subWeeks, isSameDay, getDay, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
+import { format, addDays, startOfWeek, addWeeks, subWeeks, isSameDay, getDay, startOfMonth, endOfMonth, addMonths, subMonths, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight, Plus, Edit, Trash } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { Calendar } from '@/components/ui/calendar';
 import { toast } from '@/components/ui/use-toast';
+import { useFamilyStore } from '@/services/familyService';
 
 // Mock calendar data - this would come from Google Calendar/CalDAV in real implementation
 const mockEvents = [
@@ -18,9 +19,9 @@ const mockEvents = [
     date: new Date(), 
     startTime: '15:30', 
     endTime: '17:00', 
-    person: 'Jimmy', 
+    person: 'Grayson', 
     category: 'sports',
-    color: 'bg-family-blue' 
+    color: '#9b87f5' 
   },
   { 
     id: 2, 
@@ -28,9 +29,9 @@ const mockEvents = [
     date: new Date(), 
     startTime: '10:00', 
     endTime: '11:00', 
-    person: 'Lisa', 
+    person: 'Mom', 
     category: 'health',
-    color: 'bg-family-pink' 
+    color: '#D3E4FD' 
   },
   { 
     id: 3, 
@@ -40,7 +41,7 @@ const mockEvents = [
     endTime: '15:00', 
     person: 'Mom', 
     category: 'work',
-    color: 'bg-family-purple' 
+    color: '#D3E4FD' 
   },
   { 
     id: 4, 
@@ -48,9 +49,9 @@ const mockEvents = [
     date: addDays(new Date(), 2), 
     startTime: '09:00', 
     endTime: '12:00', 
-    person: 'Emma', 
+    person: 'Dad', 
     category: 'education',
-    color: 'bg-family-orange' 
+    color: '#FFDEE2' 
   }
 ];
 
@@ -62,18 +63,21 @@ const CalendarView: React.FC = () => {
   const [isEditEventOpen, setIsEditEventOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [selectedEvent, setSelectedEvent] = useState<any>(null);
+  const { members } = useFamilyStore();
   const [newEvent, setNewEvent] = useState({
     title: '',
     date: format(new Date(), 'yyyy-MM-dd'),
     startTime: '09:00',
     endTime: '10:00',
-    person: 'Mom',
+    person: members.length > 0 ? members[0].name : '',
     category: 'general',
-    color: 'bg-family-purple'
+    color: members.length > 0 ? members[0].color : '#9b87f5'
   });
 
   const handleAddEvent = () => {
-    const eventDate = new Date(newEvent.date);
+    const eventDate = parseISO(newEvent.date); // Fix date parsing issue
+    const memberColor = getColorForPerson(newEvent.person);
+    
     const event = {
       id: events.length + 1,
       title: newEvent.title,
@@ -82,7 +86,7 @@ const CalendarView: React.FC = () => {
       endTime: newEvent.endTime,
       person: newEvent.person,
       category: newEvent.category,
-      color: getColorForPerson(newEvent.person)
+      color: memberColor
     };
     
     setEvents([...events, event]);
@@ -92,9 +96,9 @@ const CalendarView: React.FC = () => {
       date: format(new Date(), 'yyyy-MM-dd'),
       startTime: '09:00',
       endTime: '10:00',
-      person: 'Mom',
+      person: members.length > 0 ? members[0].name : '',
       category: 'general',
-      color: 'bg-family-purple'
+      color: members.length > 0 ? members[0].color : '#9b87f5'
     });
     
     toast({
@@ -106,13 +110,24 @@ const CalendarView: React.FC = () => {
   const handleEditEvent = () => {
     if (!selectedEvent) return;
     
-    const eventDate = new Date(selectedEvent.date);
+    let eventDate;
+    try {
+      eventDate = typeof selectedEvent.date === 'string' 
+        ? parseISO(selectedEvent.date) 
+        : selectedEvent.date;
+    } catch (error) {
+      console.error("Date parsing error:", error);
+      eventDate = new Date();
+    }
+    
+    const memberColor = getColorForPerson(selectedEvent.person);
+    
     const updatedEvents = events.map(event => 
       event.id === selectedEvent.id 
         ? {
             ...selectedEvent,
             date: eventDate,
-            color: getColorForPerson(selectedEvent.person)
+            color: memberColor
           }
         : event
     );
@@ -149,17 +164,9 @@ const CalendarView: React.FC = () => {
     setIsEditEventOpen(true);
   };
 
-  const getColorForPerson = (person: string) => {
-    const colorMap: {[key: string]: string} = {
-      'Mom': 'bg-family-purple',
-      'Dad': 'bg-family-blue',
-      'Jimmy': 'bg-family-blue',
-      'Lisa': 'bg-family-pink',
-      'Emma': 'bg-family-orange',
-      'All': 'bg-family-green',
-      'Grayson': 'bg-family-blue',
-    };
-    return colorMap[person] || 'bg-gray-400';
+  const getColorForPerson = (personName: string) => {
+    const member = members.find(m => m.name === personName);
+    return member ? member.color : '#9b87f5'; // Default color if not found
   };
 
   const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -169,6 +176,16 @@ const CalendarView: React.FC = () => {
     setSelectedDate(date);
     setCurrentDate(date);
     setView('day');
+  };
+  
+  // Handle person change in events
+  const handlePersonChange = (person: string) => {
+    const memberColor = getColorForPerson(person);
+    setNewEvent({
+      ...newEvent,
+      person,
+      color: memberColor
+    });
   };
 
   const renderDayView = () => {
@@ -187,7 +204,8 @@ const CalendarView: React.FC = () => {
             todaysEvents.map(event => (
               <div 
                 key={event.id} 
-                className={`p-3 rounded-md ${event.color} text-white cursor-pointer hover:opacity-90`}
+                className="p-3 rounded-md text-white cursor-pointer hover:opacity-90"
+                style={{ backgroundColor: event.color }}
                 onClick={() => handleEventClick(event)}
               >
                 <div className="font-semibold">{event.title}</div>
@@ -207,44 +225,67 @@ const CalendarView: React.FC = () => {
     
     return (
       <div className="bg-white rounded-lg shadow">
-        <div className="grid grid-cols-7 text-center border-b">
-          {weekDays.map((day, i) => (
-            <div key={day} className="p-2 font-semibold">{day}</div>
-          ))}
+        {/* Week view header with day names and dates */}
+        <div className="grid grid-cols-7 border-b">
+          {weekDates.map((date, i) => {
+            const isToday = isSameDay(date, new Date());
+            const dayEvents = events.filter(event => isSameDay(event.date, date));
+            
+            return (
+              <div 
+                key={i} 
+                className={`p-3 text-center border-r last:border-r-0 ${isToday ? 'bg-blue-50' : ''}`}
+                onClick={() => handleDaySelect(date)}
+              >
+                <div className="text-sm text-gray-500">{format(date, 'EEE')}</div>
+                <div className={`text-xl font-medium ${isToday ? 'text-blue-600' : ''}`}>{format(date, 'd')}</div>
+                <div className="text-xs text-gray-400">{dayEvents.length} events</div>
+                <button 
+                  className="mt-1 text-xs text-blue-500 hover:underline"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedDate(date);
+                    setNewEvent({...newEvent, date: format(date, 'yyyy-MM-dd')});
+                    setIsAddEventOpen(true);
+                  }}
+                >
+                  + Add Event
+                </button>
+              </div>
+            );
+          })}
         </div>
         
-        <div className="flex h-[600px]">
+        {/* Week view content with events */}
+        <div className="flex min-h-[400px] max-h-[calc(100vh-300px)]">
           {weekDates.map((date, i) => {
             const dayEvents = events.filter(event => isSameDay(event.date, date));
-            const isCurrentDay = isSameDay(date, new Date());
+            const isToday = isSameDay(date, new Date());
             const isSelectedDay = isSameDay(date, selectedDate);
             
             return (
               <div 
                 key={i} 
                 onClick={() => handleDaySelect(date)}
-                className={`flex-1 border-r last:border-r-0 flex flex-col h-full ${
-                  isCurrentDay ? 'bg-blue-50' : ''
+                className={`flex-1 border-r last:border-r-0 flex flex-col ${
+                  isToday ? 'bg-blue-50' : ''
                 } ${
                   isSelectedDay ? 'bg-blue-100' : ''
                 }`}
               >
-                <div className={`sticky top-0 p-2 text-center border-b ${isCurrentDay ? 'text-blue-600 bg-blue-50' : 'bg-white'}`}>
-                  <div className="text-sm font-medium">{format(date, 'd')}</div>
-                </div>
-                
-                <div className="flex-1 p-1 space-y-1 overflow-y-auto">
-                  {dayEvents.map(event => (
+                <div className="flex-1 p-2 space-y-2 overflow-y-auto">
+                  {dayEvents.sort((a, b) => a.startTime.localeCompare(b.startTime)).map(event => (
                     <div 
                       key={event.id} 
-                      className={`p-1 rounded ${event.color} text-white cursor-pointer hover:opacity-90`}
+                      className="p-2 rounded text-white cursor-pointer hover:opacity-90"
+                      style={{ backgroundColor: event.color }}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleEventClick(event);
                       }}
                     >
-                      <div className="text-xs font-medium">{event.startTime}</div>
-                      <div className="text-sm truncate">{event.title}</div>
+                      <div className="text-xs">{event.startTime} - {event.endTime}</div>
+                      <div className="font-medium">{event.title}</div>
                     </div>
                   ))}
                 </div>
@@ -304,7 +345,8 @@ const CalendarView: React.FC = () => {
                     {dayEvents.slice(0, 2).map(event => (
                       <div 
                         key={event.id}
-                        className={`text-[0.65rem] truncate rounded px-1 ${event.color} text-white mb-0.5 cursor-pointer hover:opacity-90`}
+                        className="text-[0.65rem] truncate rounded px-1 text-white mb-0.5 cursor-pointer hover:opacity-90"
+                        style={{ backgroundColor: event.color }}
                         title={event.title}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -464,19 +506,17 @@ const CalendarView: React.FC = () => {
                 <Label htmlFor="person">Person</Label>
                 <Select 
                   value={newEvent.person} 
-                  onValueChange={(value) => setNewEvent({...newEvent, person: value})}
+                  onValueChange={handlePersonChange}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select person" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Mom">Mom</SelectItem>
-                    <SelectItem value="Dad">Dad</SelectItem>
-                    <SelectItem value="Jimmy">Jimmy</SelectItem>
-                    <SelectItem value="Lisa">Lisa</SelectItem>
-                    <SelectItem value="Emma">Emma</SelectItem>
-                    <SelectItem value="Grayson">Grayson</SelectItem>
-                    <SelectItem value="All">All Family</SelectItem>
+                    {members.map(member => (
+                      <SelectItem key={member.id} value={member.name}>
+                        {member.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -568,19 +608,24 @@ const CalendarView: React.FC = () => {
                   <Label htmlFor="edit-person">Person</Label>
                   <Select 
                     value={selectedEvent.person} 
-                    onValueChange={(value) => setSelectedEvent({...selectedEvent, person: value})}
+                    onValueChange={(value) => {
+                      const memberColor = getColorForPerson(value);
+                      setSelectedEvent({
+                        ...selectedEvent, 
+                        person: value,
+                        color: memberColor
+                      });
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Select person" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Mom">Mom</SelectItem>
-                      <SelectItem value="Dad">Dad</SelectItem>
-                      <SelectItem value="Jimmy">Jimmy</SelectItem>
-                      <SelectItem value="Lisa">Lisa</SelectItem>
-                      <SelectItem value="Emma">Emma</SelectItem>
-                      <SelectItem value="Grayson">Grayson</SelectItem>
-                      <SelectItem value="All">All Family</SelectItem>
+                      {members.map(member => (
+                        <SelectItem key={member.id} value={member.name}>
+                          {member.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

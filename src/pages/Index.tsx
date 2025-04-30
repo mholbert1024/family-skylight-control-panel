@@ -14,7 +14,12 @@ const Index: React.FC = () => {
   const renderContent = () => {
     switch (activeTab) {
       case 'calendar':
-        return <CalendarView />;
+        return (
+          <div className="flex flex-col space-y-4">
+            <CalendarView />
+            <Footer />
+          </div>
+        );
       case 'tasks':
         return <TasksView />;
       case 'shopping':
@@ -22,7 +27,12 @@ const Index: React.FC = () => {
       case 'home':
         return <HomeView />;
       default:
-        return <CalendarView />;
+        return (
+          <div className="flex flex-col space-y-4">
+            <CalendarView />
+            <Footer />
+          </div>
+        );
     }
   };
 
@@ -35,7 +45,8 @@ const Index: React.FC = () => {
           {renderContent()}
         </div>
         
-        <Footer />
+        {/* Footer moved inside calendar view for calendar tab only */}
+        {activeTab !== 'calendar' && <Footer />}
       </div>
     </div>
   );

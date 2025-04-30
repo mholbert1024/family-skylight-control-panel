@@ -12,7 +12,7 @@ const Footer: React.FC = () => {
   const [temperature, setTemperature] = React.useState(72);
 
   return (
-    <div className="px-4 py-4 bg-white shadow-sm rounded-lg mt-auto">
+    <div className="px-4 py-4 bg-white shadow-sm rounded-lg">
       <h2 className="text-lg font-semibold mb-4">Home Controls</h2>
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
         <Button 
