@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { format, addDays, startOfWeek, addWeeks, subWeeks, isSameDay, getDay, startOfMonth, endOfMonth, addMonths, subMonths } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -214,7 +213,7 @@ const CalendarView: React.FC = () => {
           ))}
         </div>
         
-        <div className="grid grid-cols-7">
+        <div className="flex h-[600px]">
           {weekDates.map((date, i) => {
             const dayEvents = events.filter(event => isSameDay(event.date, date));
             const isCurrentDay = isSameDay(date, new Date());
@@ -224,28 +223,28 @@ const CalendarView: React.FC = () => {
               <div 
                 key={i} 
                 onClick={() => handleDaySelect(date)}
-                className={`min-h-[120px] p-2 border-r last:border-r-0 border-b cursor-pointer transition-colors hover:bg-blue-50 ${
+                className={`flex-1 border-r last:border-r-0 flex flex-col h-full ${
                   isCurrentDay ? 'bg-blue-50' : ''
                 } ${
                   isSelectedDay ? 'bg-blue-100' : ''
                 }`}
               >
-                <div className={`text-sm mb-1 font-medium ${isCurrentDay ? 'text-blue-600' : ''}`}>
-                  {format(date, 'd')}
+                <div className={`sticky top-0 p-2 text-center border-b ${isCurrentDay ? 'text-blue-600 bg-blue-50' : 'bg-white'}`}>
+                  <div className="text-sm font-medium">{format(date, 'd')}</div>
                 </div>
                 
-                <div className="space-y-1">
+                <div className="flex-1 p-1 space-y-1 overflow-y-auto">
                   {dayEvents.map(event => (
                     <div 
                       key={event.id} 
-                      className={`text-xs p-1 rounded ${event.color} text-white truncate cursor-pointer hover:opacity-90`}
-                      title={`${event.title} (${event.startTime}-${event.endTime})`}
+                      className={`p-1 rounded ${event.color} text-white cursor-pointer hover:opacity-90`}
                       onClick={(e) => {
                         e.stopPropagation();
                         handleEventClick(event);
                       }}
                     >
-                      {event.startTime} {event.title}
+                      <div className="text-xs font-medium">{event.startTime}</div>
+                      <div className="text-sm truncate">{event.title}</div>
                     </div>
                   ))}
                 </div>
@@ -629,19 +628,6 @@ const CalendarView: React.FC = () => {
       {view === 'day' && renderDayView()}
       {view === 'week' && renderWeekView()}
       {view === 'month' && renderMonthView()}
-      
-      <div className="mt-4">
-        <h3 className="font-medium mb-2">Family Members</h3>
-        <div className="flex flex-wrap gap-2">
-          <Badge className="bg-family-purple">Mom</Badge>
-          <Badge className="bg-family-blue">Dad</Badge>
-          <Badge className="bg-family-blue">Jimmy</Badge>
-          <Badge className="bg-family-blue">Grayson</Badge>
-          <Badge className="bg-family-pink">Lisa</Badge>
-          <Badge className="bg-family-orange">Emma</Badge>
-          <Badge className="bg-family-green">All Family</Badge>
-        </div>
-      </div>
     </div>
   );
 };

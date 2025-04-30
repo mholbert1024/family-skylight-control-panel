@@ -40,17 +40,15 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
     <header className="bg-white rounded-lg shadow-sm p-4">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
         <div className="flex items-center">
-          <h1 className="text-2xl font-bold text-gray-800 mr-4">Family Hub</h1>
-          
           <div className="flex items-center gap-4">
-            <div className="flex items-center text-gray-600">
-              <CalendarIcon className="h-4 w-4 mr-1" />
-              <span className="text-sm">{format(currentTime, 'MMM d, yyyy')}</span>
+            <div className="flex items-center text-gray-700">
+              <Clock className="h-4 w-4 mr-1" />
+              <span className="text-lg font-medium">{format(currentTime, 'h:mm a')}</span>
             </div>
             
             <div className="flex items-center text-gray-600">
-              <Clock className="h-4 w-4 mr-1" />
-              <span className="text-sm">{format(currentTime, 'h:mm a')}</span>
+              <CalendarIcon className="h-4 w-4 mr-1" />
+              <span className="text-sm font-medium">{format(currentTime, 'MMM d, yyyy')}</span>
             </div>
             
             <div className="flex items-center text-gray-600">
