@@ -72,15 +72,14 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
             ))}
           </div>
           
-          <div className="flex items-center space-x-2">
-            <ThemeToggle />
-            
+          <div className="flex flex-col items-end space-y-2">
             <Link to="/admin">
               <Button variant="outline" size="sm">
                 <Settings className="h-4 w-4 mr-1" />
                 Admin
               </Button>
             </Link>
+            <ThemeToggle />
           </div>
         </div>
       </div>

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { format, addDays, startOfWeek, addWeeks, subWeeks, isSameDay, getDay, startOfMonth, endOfMonth, addMonths, subMonths, parseISO } from 'date-fns';
+import { format, addDays, startOfWeek, addWeeks, subWeeks, isSameDay, getDay, startOfMonth, endOfMonth, addMonths, subMonths, parseISO, getWeeksInMonth } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, ArrowRight, Plus, Edit, Trash } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -180,6 +180,11 @@ const CalendarView: React.FC = () => {
     setView('day');
   };
   
+  // Handle week change
+  const handleNextWeek = () => {
+    setCurrentDate(prev => addWeeks(prev, 1));
+  };
+  
   // Handle person change in events
   const handlePersonChange = (person: string) => {
     const memberColor = getColorForPerson(person);
@@ -208,14 +213,13 @@ const CalendarView: React.FC = () => {
                 key={event.id} 
                 className="p-3 rounded-md cursor-pointer hover:opacity-90"
                 style={{ 
-                  backgroundColor: event.color,
-                  color: theme === 'light' ? 'black' : 'white'
+                  backgroundColor: event.color
                 }}
                 onClick={() => handleEventClick(event)}
               >
-                <div className="font-semibold">{event.title}</div>
-                <div className="text-sm opacity-90">{event.startTime} - {event.endTime}</div>
-                <div className="text-sm opacity-90">{event.person}</div>
+                <div className="font-semibold text-black">{event.title}</div>
+                <div className="text-sm text-black opacity-90">{event.startTime} - {event.endTime}</div>
+                <div className="text-sm text-black opacity-90">{event.person}</div>
               </div>
             ))
           )}
@@ -259,7 +263,7 @@ const CalendarView: React.FC = () => {
         </div>
         
         {/* Week view content with events - 4 columns */}
-        <div className="grid grid-cols-4 min-h-[250px] max-h-[250px]">
+        <div className="grid grid-cols-4 min-h-[250px] max-h-[300px]">
           {topRowDates.map((date, i) => {
             const dayEvents = events.filter(event => isSameDay(event.date, date));
             const isToday = isSameDay(date, new Date());
@@ -279,7 +283,7 @@ const CalendarView: React.FC = () => {
                   {dayEvents.sort((a, b) => a.startTime.localeCompare(b.startTime)).map(event => (
                     <div 
                       key={event.id} 
-                      className="p-2 rounded text-black dark:text-white cursor-pointer hover:opacity-90"
+                      className="p-2 rounded text-black cursor-pointer hover:opacity-90"
                       style={{ backgroundColor: event.color }}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -320,7 +324,10 @@ const CalendarView: React.FC = () => {
           })}
           
           {/* Next week preview cell */}
-          <div className="p-3 text-left">
+          <div 
+            className="p-3 text-left cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700/50" 
+            onClick={handleNextWeek}
+          >
             <div className="text-lg font-bold dark:text-white">Next Week</div>
             <div className="text-sm text-gray-500 dark:text-gray-400">
               {format(nextWeekStart, 'MMM d')} - {format(addDays(nextWeekStart, 6), 'MMM d')}
@@ -329,7 +336,7 @@ const CalendarView: React.FC = () => {
         </div>
         
         {/* Bottom row event content - 3 columns + next week */}
-        <div className="grid grid-cols-4 min-h-[250px] max-h-[250px]">
+        <div className="grid grid-cols-4 min-h-[250px] max-h-[300px]">
           {bottomRowDates.map((date, i) => {
             const dayEvents = events.filter(event => isSameDay(event.date, date));
             const isToday = isSameDay(date, new Date());
@@ -349,7 +356,7 @@ const CalendarView: React.FC = () => {
                   {dayEvents.sort((a, b) => a.startTime.localeCompare(b.startTime)).map(event => (
                     <div 
                       key={event.id} 
-                      className="p-2 rounded text-black dark:text-white cursor-pointer hover:opacity-90"
+                      className="p-2 rounded text-black cursor-pointer hover:opacity-90"
                       style={{ backgroundColor: event.color }}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -366,8 +373,14 @@ const CalendarView: React.FC = () => {
           })}
           
           {/* Next week preview content */}
-          <div className="p-2 bg-gray-50 dark:bg-gray-700/30">
+          <div 
+            className="p-2 bg-gray-50 dark:bg-gray-700/30 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700"
+            onClick={handleNextWeek}
+          >
             {/* This cell can be used to show preview of next week's events */}
+            <div className="text-center text-gray-500 dark:text-gray-400 p-4">
+              Click to view next week
+            </div>
           </div>
         </div>
       </div>
@@ -379,8 +392,12 @@ const CalendarView: React.FC = () => {
     const lastDayOfMonth = endOfMonth(currentDate);
     const startDateOfCalendar = startOfWeek(firstDayOfMonth);
     
-    // Create array of 42 days (6 weeks) to ensure we have enough days to fill the calendar grid
-    const daysToDisplay = Array.from({ length: 42 }).map((_, i) => addDays(startDateOfCalendar, i));
+    // Calculate if we need 5 or 6 weeks to display the month
+    const weeksInMonth = getWeeksInMonth(currentDate);
+    const rowsNeeded = weeksInMonth > 5 ? 6 : 5;
+    
+    // Create array of days to fill the calendar grid (5 or 6 weeks)
+    const daysToDisplay = Array.from({ length: rowsNeeded * 7 }).map((_, i) => addDays(startDateOfCalendar, i));
     
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
@@ -438,10 +455,10 @@ const CalendarView: React.FC = () => {
                         
                         {/* Event title with color background */}
                         <div 
-                          className="flex-1 truncate rounded px-1 py-0.5 text-sm"
+                          className="flex-1 truncate rounded px-1 py-0.5 text-sm font-medium"
                           style={{ 
                             backgroundColor: event.color,
-                            color: theme === 'light' ? 'black' : 'white'
+                            color: 'black'
                           }}
                         >
                           {event.title}
