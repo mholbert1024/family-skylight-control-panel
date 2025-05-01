@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Plus, Check, ShoppingCart } from 'lucide-react';
@@ -33,7 +32,8 @@ const ShoppingListView: React.FC = () => {
     addedBy: 'Mom'
   });
   const [isAddItemOpen, setIsAddItemOpen] = useState(false);
-  const [filter, setFilter] = useState<'all' | 'active' | 'purchased'>('active');
+  // Set default filter to 'all' instead of 'active'
+  const [filter, setFilter] = useState<'all' | 'active' | 'purchased'>('all');
   
   const handleAddItem = () => {
     const item: ShoppingItem = {
