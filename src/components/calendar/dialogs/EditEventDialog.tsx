@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { EventType } from '@/components/calendar/types/calendarTypes';
 import { FamilyMember } from '@/services/familyService';
 import { Edit, Trash } from 'lucide-react';
+import { format } from 'date-fns';
 
 interface EditEventDialogProps {
   isOpen: boolean;

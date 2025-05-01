@@ -7,6 +7,7 @@ import { format } from 'date-fns';
 import { useFamilyStore } from '@/services/familyService';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import ThemeToggle from '../theme/ThemeToggle';
+import WeatherForecast from '../weather/WeatherForecast';
 
 interface HeaderProps {
   activeTab: string;
@@ -23,7 +24,8 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
 
   const { members } = useFamilyStore();
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [weather, setWeather] = useState({ temp: '72°', condition: 'Sunny' });
+  const [weatherData, setWeatherData] = useState({ temp: '72°', condition: 'Sunny' });
+  const [showForecast, setShowForecast] = useState(false);
 
   // Update time every minute
   useEffect(() => {
@@ -52,52 +54,58 @@ const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab }) => {
           </div>
         </div>
         
-        {/* Centered weather */}
-        <div className="flex items-center justify-center text-gray-600 dark:text-gray-300 mx-auto md:mx-0">
+        {/* Weather - clickable with forecast popup */}
+        <div 
+          className="flex items-center justify-center text-gray-600 dark:text-gray-300 mx-auto md:mx-0 cursor-pointer relative"
+          onClick={() => setShowForecast(!showForecast)}
+        >
           <CloudSun className="h-5 w-5 mr-1 text-blue-500" />
-          <span className="text-md">{weather.temp} | {weather.condition}</span>
+          <span className="text-md">{weatherData.temp} | {weatherData.condition}</span>
+          
+          {showForecast && <WeatherForecast onClose={() => setShowForecast(false)} />}
         </div>
         
-        <div className="flex items-center justify-between md:justify-end gap-4 w-full md:w-auto">
-          <div className="flex items-center space-x-2">
-            {members.map((member) => (
-              <Avatar key={member.id} className="h-8 w-8 border-2" style={{ borderColor: member.color }}>
-                <AvatarFallback 
-                  style={{ backgroundColor: member.color }}
-                  className="text-white"
-                >
-                  {member.name.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
-            ))}
-          </div>
-          
-          <div className="flex flex-col items-end space-y-2">
-            <Link to="/admin">
-              <Button variant="outline" size="sm">
-                <Settings className="h-4 w-4 mr-1" />
-                Admin
+        <div className="flex items-center justify-end gap-4 w-full md:w-auto">
+          <div className="flex items-center space-x-1">
+            <ThemeToggle />
+            <Link to="/admin" title="Admin Settings">
+              <Button variant="outline" size="icon" className="h-9 w-9">
+                <Settings className="h-5 w-5" />
               </Button>
             </Link>
-            <ThemeToggle />
           </div>
         </div>
       </div>
       
-      <nav className="mt-4">
-        <div className="flex space-x-1 overflow-x-auto">
-          {tabs.map((tab) => (
-            <Button
-              key={tab.id}
-              variant={activeTab === tab.id ? "default" : "ghost"}
-              onClick={() => setActiveTab(tab.id)}
-              className="whitespace-nowrap"
-            >
-              {tab.label}
-            </Button>
+      <div className="mt-4 flex md:flex-row items-center justify-between">
+        <nav className="flex-1">
+          <div className="flex space-x-1 overflow-x-auto justify-center">
+            {tabs.map((tab) => (
+              <Button
+                key={tab.id}
+                variant={activeTab === tab.id ? "default" : "ghost"}
+                onClick={() => setActiveTab(tab.id)}
+                className="whitespace-nowrap"
+              >
+                {tab.label}
+              </Button>
+            ))}
+          </div>
+        </nav>
+        
+        <div className="flex items-center space-x-2 mt-2 md:mt-0">
+          {members.map((member) => (
+            <Avatar key={member.id} className="h-10 w-10 border-2" style={{ borderColor: member.color }}>
+              <AvatarFallback 
+                style={{ backgroundColor: member.color }}
+                className="text-white"
+              >
+                {member.name.charAt(0)}
+              </AvatarFallback>
+            </Avatar>
           ))}
         </div>
-      </nav>
+      </div>
     </header>
   );
 };
