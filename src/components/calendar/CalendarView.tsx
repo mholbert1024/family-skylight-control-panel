@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { format, addDays, startOfWeek, addWeeks, subWeeks, isSameDay, startOfMonth, endOfMonth, addMonths, subMonths, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, ArrowRight, Plus } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Plus, SettingsIcon } from 'lucide-react';
 import { toast } from '@/components/ui/use-toast';
 import { useFamilyStore } from '@/services/familyService';
+import { useHomeAssistantStore } from '@/services/homeAssistantService';
 
 import DayView from './views/DayView';
 import WeekView from './views/WeekView';
@@ -11,6 +12,7 @@ import MonthView from './views/MonthView';
 import AddEventDialog from './dialogs/AddEventDialog';
 import EditEventDialog from './dialogs/EditEventDialog';
 import { EventType, defaultEventFormData } from './types/calendarTypes';
+import HomeAssistantConnectionDialog from '../integrations/HomeAssistantConnectionDialog';
 
 // Mock calendar data - this would come from Google Calendar/CalDAV in real implementation
 const mockEvents = [
@@ -66,9 +68,18 @@ const CalendarView: React.FC = () => {
   const [selectedEvent, setSelectedEvent] = useState<EventType | null>(null);
   const { members } = useFamilyStore();
   const [newEvent, setNewEvent] = useState(defaultEventFormData());
+  const [isHADialogOpen, setIsHADialogOpen] = useState(false);
+  
+  // Get Home Assistant data
+  const { 
+    config: haConfig, 
+    events: haEvents, 
+    fetchCalendarEvents, 
+    isLoading: haIsLoading 
+  } = useHomeAssistantStore();
 
   // Initialize with first family member if available
-  React.useEffect(() => {
+  useEffect(() => {
     if (members.length > 0 && !newEvent.person) {
       setNewEvent(prev => ({
         ...prev, 
@@ -77,6 +88,60 @@ const CalendarView: React.FC = () => {
       }));
     }
   }, [members]);
+  
+  // Fetch Home Assistant calendar events when date changes or when connection established
+  useEffect(() => {
+    if (haConfig.connected) {
+      // For current view, calculate appropriate date range
+      let startDate: Date;
+      let endDate: Date;
+      
+      switch (view) {
+        case 'day':
+          startDate = currentDate;
+          endDate = addDays(currentDate, 1);
+          break;
+        case 'week':
+          startDate = startOfWeek(currentDate);
+          endDate = addDays(startDate, 7);
+          break;
+        case 'month':
+        default:
+          startDate = startOfMonth(currentDate);
+          endDate = endOfMonth(currentDate);
+          break;
+      }
+      
+      fetchCalendarEvents(startDate, endDate);
+    }
+  }, [currentDate, view, haConfig.connected]);
+  
+  // Merge local events with Home Assistant events
+  useEffect(() => {
+    if (haEvents.length > 0) {
+      // Convert Home Assistant events to our EventType format
+      const convertedHAEvents: EventType[] = haEvents.map((haEvent, index) => ({
+        id: haEvent.id ? Number(haEvent.id.replace(/\D/g, '')) + 1000 : 1000 + index,
+        title: haEvent.title,
+        date: haEvent.start,
+        startTime: format(haEvent.start, 'HH:mm'),
+        endTime: format(haEvent.end, 'HH:mm'),
+        person: 'Home Assistant',  // We can customize this later
+        category: 'external',
+        color: haEvent.color || '#9b87f5'
+      }));
+      
+      // Merge with our local events, but don't duplicate
+      const localEvents = mockEvents.filter(event => 
+        !convertedHAEvents.some(haEvent => 
+          haEvent.title === event.title && 
+          isSameDay(haEvent.date as Date, event.date as Date)
+        )
+      );
+      
+      setEvents([...localEvents, ...convertedHAEvents]);
+    }
+  }, [haEvents]);
 
   const handleAddEvent = () => {
     const eventDate = parseISO(newEvent.date); 
@@ -270,10 +335,28 @@ const CalendarView: React.FC = () => {
           </Button>
         </div>
         
-        <Button onClick={() => setIsAddEventOpen(true)}>
-          <Plus className="h-4 w-4 mr-1" />
-          Add Event
-        </Button>
+        <div className="flex items-center space-x-2">
+          {haConfig.connected ? (
+            <Button variant="outline" size="sm" onClick={() => setIsHADialogOpen(true)}>
+              <span className="flex items-center gap-1">
+                <span className="h-2 w-2 rounded-full bg-green-500"></span>
+                <span className="text-xs">HA Connected</span>
+              </span>
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => setIsHADialogOpen(true)}>
+              <span className="flex items-center gap-1">
+                <span className="h-2 w-2 rounded-full bg-gray-400"></span>
+                <span className="text-xs">Connect HA</span>
+              </span>
+            </Button>
+          )}
+          
+          <Button onClick={() => setIsAddEventOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" />
+            Add Event
+          </Button>
+        </div>
       </div>
       
       {/* Render the appropriate view based on the selected view type */}
@@ -326,6 +409,12 @@ const CalendarView: React.FC = () => {
         handleEditEvent={handleEditEvent}
         handleDeleteEvent={handleDeleteEvent}
         members={members}
+      />
+      
+      {/* Home Assistant Connection Dialog */}
+      <HomeAssistantConnectionDialog
+        isOpen={isHADialogOpen}
+        setIsOpen={setIsHADialogOpen}
       />
     </div>
   );
