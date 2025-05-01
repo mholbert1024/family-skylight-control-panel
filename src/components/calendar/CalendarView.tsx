@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { format, addDays, startOfWeek, addWeeks, subWeeks, isSameDay, startOfMonth, endOfMonth, addMonths, subMonths, parseISO } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -230,15 +229,6 @@ const CalendarView: React.FC = () => {
   return (
     <div className="flex flex-col space-y-4">
       <div className="flex justify-between items-center">
-        <div>
-          <Button variant="ghost" size="sm" onClick={() => {
-            setCurrentDate(new Date());
-            setSelectedDate(new Date());
-          }}>
-            Today
-          </Button>
-        </div>
-        
         <div className="flex items-center space-x-1">
           <Button variant="outline" size="icon" onClick={previousPeriod}>
             <ArrowLeft className="h-4 w-4" />
@@ -247,9 +237,16 @@ const CalendarView: React.FC = () => {
           <Button variant="outline" size="icon" onClick={nextPeriod}>
             <ArrowRight className="h-4 w-4" />
           </Button>
+          
+          <Button variant="ghost" size="sm" onClick={() => {
+            setCurrentDate(new Date());
+            setSelectedDate(new Date());
+          }}>
+            Today
+          </Button>
         </div>
         
-        <div className="flex space-x-1">
+        <div className="flex space-x-1 mx-auto">
           <Button 
             variant={view === 'day' ? 'default' : 'outline'} 
             size="sm"

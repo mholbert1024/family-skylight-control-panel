@@ -1,12 +1,8 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CloudSun, CloudRain, Sun, CloudSnow, CloudLightning, X } from 'lucide-react';
+import { CloudSun, CloudRain, Sun, CloudSnow, CloudLightning } from 'lucide-react';
 import { format, addDays } from 'date-fns';
-
-interface WeatherForecastProps {
-  onClose: () => void;
-}
 
 // Mock weather data - this would come from a weather API in real implementation
 const mockWeatherData = [
@@ -78,14 +74,14 @@ const WeatherIcon: React.FC<{ condition: string }> = ({ condition }) => {
   }
 };
 
-const WeatherForecast: React.FC<WeatherForecastProps> = ({ onClose }) => {
+const WeatherForecast: React.FC = () => {
   return (
-    <Card className="absolute top-full mt-2 right-0 z-50 w-72 shadow-lg p-0 bg-white dark:bg-gray-800">
-      <CardHeader className="pb-2 px-4 pt-3 flex flex-row items-center justify-between">
+    <Card 
+      id="weather-forecast" 
+      className="absolute top-full mt-2 right-0 z-50 w-72 shadow-lg p-0 bg-white dark:bg-gray-800"
+    >
+      <CardHeader className="pb-2 px-4 pt-3">
         <CardTitle className="text-base">7-Day Weather Forecast</CardTitle>
-        <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300">
-          <X className="h-4 w-4" />
-        </button>
       </CardHeader>
       <CardContent className="px-3 py-2">
         <div className="space-y-3">

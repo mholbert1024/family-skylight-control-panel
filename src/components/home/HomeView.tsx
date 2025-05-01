@@ -35,7 +35,7 @@ const HomeView: React.FC = () => {
   return (
     <div className="flex flex-col space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold">Home Controls</h2>
+        <h2 className="text-xl font-bold dark:text-gray-100">Home Controls</h2>
         <Badge 
           variant={deviceStates.mode === 'home' ? 'default' : 'outline'}
           className="cursor-pointer"
@@ -56,7 +56,7 @@ const HomeView: React.FC = () => {
             aria-label="Toggle Living Room Lights"
           />
           <CardContent className="p-4 flex flex-col items-center">
-            <div className={`w-12 h-12 flex items-center justify-center rounded-full mb-2 ${deviceStates.livingRoomLights ? 'bg-amber-100 dark:bg-amber-900/40' : 'bg-gray-100 dark:bg-gray-700'}`}>
+            <div className="w-12 h-12 flex items-center justify-center rounded-full mb-2 bg-gray-100 dark:bg-gray-700">
               <Lightbulb 
                 className={deviceStates.livingRoomLights ? 'h-6 w-6 text-amber-500 dark:text-amber-300' : 'h-6 w-6 text-gray-400 dark:text-gray-500'} 
               />
@@ -73,7 +73,7 @@ const HomeView: React.FC = () => {
             aria-label="Toggle Kitchen Lights"
           />
           <CardContent className="p-4 flex flex-col items-center">
-            <div className={`w-12 h-12 flex items-center justify-center rounded-full mb-2 ${deviceStates.kitchenLights ? 'bg-amber-100 dark:bg-amber-900/40' : 'bg-gray-100 dark:bg-gray-700'}`}>
+            <div className="w-12 h-12 flex items-center justify-center rounded-full mb-2 bg-gray-100 dark:bg-gray-700">
               <Lightbulb 
                 className={deviceStates.kitchenLights ? 'h-6 w-6 text-amber-500 dark:text-amber-300' : 'h-6 w-6 text-gray-400 dark:text-gray-500'} 
               />
@@ -90,7 +90,7 @@ const HomeView: React.FC = () => {
             aria-label="Toggle Bedroom Lights"
           />
           <CardContent className="p-4 flex flex-col items-center">
-            <div className={`w-12 h-12 flex items-center justify-center rounded-full mb-2 ${deviceStates.bedroomLights ? 'bg-amber-100 dark:bg-amber-900/40' : 'bg-gray-100 dark:bg-gray-700'}`}>
+            <div className="w-12 h-12 flex items-center justify-center rounded-full mb-2 bg-gray-100 dark:bg-gray-700">
               <Lightbulb 
                 className={deviceStates.bedroomLights ? 'h-6 w-6 text-amber-500 dark:text-amber-300' : 'h-6 w-6 text-gray-400 dark:text-gray-500'} 
               />
@@ -163,7 +163,7 @@ const HomeView: React.FC = () => {
         {/* Climate control */}
         <Card className="relative bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-xl shadow-md hover:shadow-lg transition-all duration-200">
           <CardContent className="p-4 flex flex-col items-center">
-            <div className="w-12 h-12 flex items-center justify-center rounded-full mb-2 bg-orange-100 dark:bg-orange-900/40">
+            <div className="w-12 h-12 flex items-center justify-center rounded-full mb-2 bg-gray-100 dark:bg-gray-700">
               <ThermometerSun className="h-6 w-6 text-orange-600 dark:text-orange-400" />
             </div>
             <h3 className="text-sm font-medium dark:text-gray-200">Temperature</h3>
