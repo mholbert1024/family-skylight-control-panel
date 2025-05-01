@@ -29,19 +29,44 @@ const HomeAssistantConnectionDialog: React.FC<HomeAssistantConnectionDialogProps
     accessToken: config.accessToken || '',
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    setError(null);
+  };
+  
+  // Ensure the URL has a protocol
+  const ensureProtocol = (url: string): string => {
+    if (!url) return '';
+    
+    // If URL doesn't start with http:// or https://, add https://
+    if (!url.match(/^https?:\/\//i)) {
+      return `https://${url}`;
+    }
+    
+    return url;
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
+    
+    // Check for empty fields
+    if (!formData.baseUrl.trim() || !formData.accessToken.trim()) {
+      setError('Please provide both URL and access token');
+      setIsLoading(false);
+      return;
+    }
+    
+    const processedUrl = ensureProtocol(formData.baseUrl.trim());
+    console.log(`Testing connection to: ${processedUrl}/api/`);
     
     try {
       // Test the connection first
-      const response = await fetch(`${formData.baseUrl}/api/`, {
+      const response = await fetch(`${processedUrl}/api/`, {
         headers: {
           Authorization: `Bearer ${formData.accessToken}`,
           'Content-Type': 'application/json',
@@ -49,12 +74,15 @@ const HomeAssistantConnectionDialog: React.FC<HomeAssistantConnectionDialogProps
       });
       
       if (!response.ok) {
-        throw new Error(`Connection failed: ${response.status}`);
+        throw new Error(`Connection failed: ${response.status} ${response.statusText}`);
       }
+      
+      const data = await response.json();
+      console.log('Connection successful:', data);
       
       // Save the connection details
       setConfig({
-        baseUrl: formData.baseUrl,
+        baseUrl: processedUrl,
         accessToken: formData.accessToken,
         connected: true,
       });
@@ -66,11 +94,17 @@ const HomeAssistantConnectionDialog: React.FC<HomeAssistantConnectionDialogProps
       
       setIsOpen(false);
     } catch (error) {
-      console.error(error);
+      console.error('Connection error:', error);
+      setError(error instanceof Error 
+        ? error.message 
+        : 'Failed to connect to Home Assistant. Please check your URL and token.');
+      
       toast({
         variant: "destructive",
         title: "Connection Failed",
-        description: error instanceof Error ? error.message : 'Failed to connect to Home Assistant',
+        description: error instanceof Error 
+          ? error.message 
+          : 'Failed to connect to Home Assistant',
       });
     } finally {
       setIsLoading(false);
@@ -83,6 +117,7 @@ const HomeAssistantConnectionDialog: React.FC<HomeAssistantConnectionDialogProps
       baseUrl: '',
       accessToken: '',
     });
+    setError(null);
     toast({
       title: "Disconnected",
       description: "Home Assistant connection removed",
@@ -107,12 +142,14 @@ const HomeAssistantConnectionDialog: React.FC<HomeAssistantConnectionDialogProps
             <Input
               id="baseUrl"
               name="baseUrl"
-              placeholder="http://homeassistant.local:8123"
+              placeholder="homeassistant.local:8123"
               value={formData.baseUrl}
               onChange={handleChange}
               required
             />
-            <p className="text-xs text-muted-foreground">Include http/https and port if needed</p>
+            <p className="text-xs text-muted-foreground">
+              Your Home Assistant URL (http/https will be added if missing)
+            </p>
           </div>
           
           <div className="space-y-2">
@@ -129,6 +166,12 @@ const HomeAssistantConnectionDialog: React.FC<HomeAssistantConnectionDialogProps
               Generate from your Home Assistant profile page
             </p>
           </div>
+          
+          {error && (
+            <div className="bg-destructive/10 text-destructive p-3 rounded-md text-sm">
+              {error}
+            </div>
+          )}
           
           <DialogFooter className="flex justify-between items-center">
             {isConnected && (

@@ -29,6 +29,17 @@ interface HomeAssistantStore {
   disconnect: () => void;
 }
 
+// Helper function to ensure URL has a protocol
+const ensureProtocol = (url: string): string => {
+  if (!url) return '';
+  
+  if (!url.match(/^https?:\/\//i)) {
+    return `https://${url}`;
+  }
+  
+  return url;
+};
+
 export const useHomeAssistantStore = create<HomeAssistantStore>((set, get) => ({
   config: {
     baseUrl: localStorage.getItem('ha_baseUrl') || '',
@@ -41,6 +52,11 @@ export const useHomeAssistantStore = create<HomeAssistantStore>((set, get) => ({
   
   setConfig: (newConfig) => {
     const updatedConfig = { ...get().config, ...newConfig };
+    
+    // Ensure baseUrl has protocol
+    if (updatedConfig.baseUrl) {
+      updatedConfig.baseUrl = ensureProtocol(updatedConfig.baseUrl);
+    }
     
     // Save to localStorage
     localStorage.setItem('ha_baseUrl', updatedConfig.baseUrl);
@@ -65,6 +81,8 @@ export const useHomeAssistantStore = create<HomeAssistantStore>((set, get) => ({
       const start = startDate.toISOString();
       const end = endDate.toISOString();
       
+      console.log(`Fetching calendars from ${baseUrl}/api/calendar`);
+      
       // Get calendar entities
       const response = await fetch(`${baseUrl}/api/calendar`, {
         headers: {
@@ -78,12 +96,14 @@ export const useHomeAssistantStore = create<HomeAssistantStore>((set, get) => ({
       }
       
       const data = await response.json();
+      console.log('Available calendars:', data);
       
       // Process and normalize Home Assistant calendar events
       const events: CalendarEvent[] = [];
       
       for (const entity of data) {
         const entityId = entity.entity_id;
+        console.log(`Fetching events for calendar: ${entityId}`);
         
         // Now fetch events for this calendar entity
         const eventsResponse = await fetch(`${baseUrl}/api/calendars/${entityId}?start=${start}&end=${end}`, {
@@ -94,11 +114,12 @@ export const useHomeAssistantStore = create<HomeAssistantStore>((set, get) => ({
         });
         
         if (!eventsResponse.ok) {
-          console.error(`Failed to fetch events for ${entityId}`);
+          console.error(`Failed to fetch events for ${entityId}: ${eventsResponse.status}`);
           continue;
         }
         
         const entityEvents = await eventsResponse.json();
+        console.log(`Received ${entityEvents.length} events for ${entityId}`);
         
         // Transform Home Assistant events to our app format
         for (const event of entityEvents) {
@@ -122,7 +143,7 @@ export const useHomeAssistantStore = create<HomeAssistantStore>((set, get) => ({
         description: `Loaded ${events.length} events from Home Assistant`,
       });
     } catch (error) {
-      console.error(error);
+      console.error('Error fetching calendar events:', error);
       set({ 
         error: error instanceof Error ? error.message : 'Unknown error fetching calendar events',
         isLoading: false 
