@@ -27,6 +27,7 @@ interface HomeAssistantStore {
   setConfig: (config: Partial<HomeAssistantConfig>) => void;
   fetchCalendarEvents: (startDate: Date, endDate: Date) => Promise<void>;
   disconnect: () => void;
+  testConnection: () => Promise<boolean>;
 }
 
 // Helper function to ensure URL has a protocol
@@ -83,6 +84,49 @@ export const useHomeAssistantStore = create<HomeAssistantStore>((set, get) => ({
     localStorage.setItem('ha_connected', String(updatedConfig.connected));
     
     set({ config: updatedConfig });
+  },
+  
+  testConnection: async () => {
+    const { baseUrl, accessToken } = get().config;
+    
+    if (!baseUrl || !accessToken) {
+      set({ error: 'Missing URL or access token' });
+      return false;
+    }
+    
+    try {
+      // Make sure baseUrl doesn't end with a slash
+      const apiUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+      
+      const response = await fetch(`${apiUrl}/api/`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Connection failed: ${response.status} ${response.statusText || 'Unknown error'}`);
+      }
+      
+      await validateJsonResponse(response, 'API test');
+      return true;
+    } catch (error) {
+      console.error('Test connection error:', error);
+      
+      let errorMessage = 'Connection test failed';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        
+        if (errorMessage.includes('NetworkError') || errorMessage.includes('Failed to fetch')) {
+          errorMessage = 'Network error - CORS restrictions may be blocking access. Configure CORS in your Home Assistant instance.';
+        }
+      }
+      
+      set({ error: errorMessage });
+      return false;
+    }
   },
   
   fetchCalendarEvents: async (startDate: Date, endDate: Date) => {
@@ -184,14 +228,26 @@ export const useHomeAssistantStore = create<HomeAssistantStore>((set, get) => ({
       });
     } catch (error) {
       console.error('Error fetching calendar events:', error);
+      
+      let errorMessage = 'Unknown error fetching calendar events';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+        
+        // Provide more specific error messages for CORS issues
+        if (errorMessage.includes('NetworkError') || errorMessage.includes('Failed to fetch')) {
+          errorMessage = 'Network error - CORS restrictions may be blocking access to Home Assistant. Configure CORS in your Home Assistant instance.';
+        }
+      }
+      
       set({ 
-        error: error instanceof Error ? error.message : 'Unknown error fetching calendar events',
+        error: errorMessage,
         isLoading: false 
       });
+      
       toast({
         variant: "destructive",
         title: "Calendar Sync Failed",
-        description: error instanceof Error ? error.message : 'Failed to fetch calendar events',
+        description: errorMessage,
       });
     }
   },
