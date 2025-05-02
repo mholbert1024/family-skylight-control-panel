@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useHomeAssistantStore } from '@/services/homeAssistantService';
 import { toast } from '@/components/ui/use-toast';
+import { AlertCircle } from 'lucide-react';
 
 interface HomeAssistantConnectionDialogProps {
   isOpen: boolean;
@@ -37,16 +38,24 @@ const HomeAssistantConnectionDialog: React.FC<HomeAssistantConnectionDialogProps
     setError(null);
   };
   
-  // Ensure the URL has a protocol
-  const ensureProtocol = (url: string): string => {
+  // Ensure the URL has a protocol and no trailing /api
+  const formatUrl = (url: string): string => {
     if (!url) return '';
     
-    // If URL doesn't start with http:// or https://, add https://
-    if (!url.match(/^https?:\/\//i)) {
-      return `https://${url}`;
+    // Remove trailing slashes
+    let formattedUrl = url.trim().replace(/\/+$/, '');
+    
+    // Remove /api if it's at the end of the URL 
+    if (formattedUrl.endsWith('/api')) {
+      formattedUrl = formattedUrl.slice(0, -4);
     }
     
-    return url;
+    // If URL doesn't start with http:// or https://, add https://
+    if (!formattedUrl.match(/^https?:\/\//i)) {
+      formattedUrl = `https://${formattedUrl}`;
+    }
+    
+    return formattedUrl;
   };
   
   const handleSubmit = async (e: React.FormEvent) => {
@@ -61,7 +70,7 @@ const HomeAssistantConnectionDialog: React.FC<HomeAssistantConnectionDialogProps
       return;
     }
     
-    const processedUrl = ensureProtocol(formData.baseUrl.trim());
+    const processedUrl = formatUrl(formData.baseUrl.trim());
     console.log(`Testing connection to: ${processedUrl}/api/`);
     
     try {
@@ -70,11 +79,20 @@ const HomeAssistantConnectionDialog: React.FC<HomeAssistantConnectionDialogProps
         headers: {
           Authorization: `Bearer ${formData.accessToken}`,
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
       });
       
       if (!response.ok) {
         throw new Error(`Connection failed: ${response.status} ${response.statusText}`);
+      }
+      
+      // Check if response is valid JSON
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('Received non-JSON response:', text.substring(0, 300) + '...');
+        throw new Error('Received HTML instead of JSON. Make sure you\'re using the correct Home Assistant URL (not the web interface URL)');
       }
       
       const data = await response.json();
@@ -95,16 +113,23 @@ const HomeAssistantConnectionDialog: React.FC<HomeAssistantConnectionDialogProps
       setIsOpen(false);
     } catch (error) {
       console.error('Connection error:', error);
-      setError(error instanceof Error 
-        ? error.message 
-        : 'Failed to connect to Home Assistant. Please check your URL and token.');
+      let errorMessage = 'Failed to connect to Home Assistant. Please check your URL and token.';
+      
+      if (error instanceof Error) {
+        // Provide more helpful messages for common errors
+        if (error.message.includes('NetworkError') || error.message.includes('Failed to fetch')) {
+          errorMessage = 'Connection failed: Network error. This could be due to CORS restrictions. Make sure your Home Assistant instance is accessible from your current network.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      setError(errorMessage);
       
       toast({
         variant: "destructive",
         title: "Connection Failed",
-        description: error instanceof Error 
-          ? error.message 
-          : 'Failed to connect to Home Assistant',
+        description: errorMessage,
       });
     } finally {
       setIsLoading(false);
@@ -125,6 +150,18 @@ const HomeAssistantConnectionDialog: React.FC<HomeAssistantConnectionDialogProps
   };
   
   const isConnected = config.connected;
+  
+  const renderUrlHelp = () => (
+    <div className="text-xs text-muted-foreground space-y-1">
+      <p>Your Home Assistant URL (http/https will be added if missing)</p>
+      <p>Examples:</p>
+      <ul className="list-disc list-inside pl-2">
+        <li>homeassistant.local:8123</li>
+        <li>192.168.1.100:8123</li>
+        <li>my-home-assistant.duckdns.org</li>
+      </ul>
+    </div>
+  );
   
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -147,9 +184,7 @@ const HomeAssistantConnectionDialog: React.FC<HomeAssistantConnectionDialogProps
               onChange={handleChange}
               required
             />
-            <p className="text-xs text-muted-foreground">
-              Your Home Assistant URL (http/https will be added if missing)
-            </p>
+            {renderUrlHelp()}
           </div>
           
           <div className="space-y-2">
@@ -168,8 +203,9 @@ const HomeAssistantConnectionDialog: React.FC<HomeAssistantConnectionDialogProps
           </div>
           
           {error && (
-            <div className="bg-destructive/10 text-destructive p-3 rounded-md text-sm">
-              {error}
+            <div className="bg-destructive/10 text-destructive p-3 rounded-md text-sm flex items-start space-x-2">
+              <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+              <span>{error}</span>
             </div>
           )}
           

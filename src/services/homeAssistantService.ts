@@ -40,6 +40,25 @@ const ensureProtocol = (url: string): string => {
   return url;
 };
 
+// Helper function to validate response is JSON
+const validateJsonResponse = async (response: Response, errorContext: string): Promise<any> => {
+  const contentType = response.headers.get('content-type');
+  
+  // Check if the content type indicates JSON
+  if (!contentType || !contentType.includes('application/json')) {
+    const text = await response.text();
+    console.error(`Received non-JSON response for ${errorContext}:`, text.substring(0, 300) + '...');
+    throw new Error(`Expected JSON response but received ${contentType || 'unknown content type'} for ${errorContext}. Your Home Assistant instance may be returning a web page instead of API data. Please verify the URL is correct and points to your Home Assistant API, not the web interface.`);
+  }
+  
+  try {
+    return await response.json();
+  } catch (error) {
+    console.error(`Failed to parse JSON for ${errorContext}:`, error);
+    throw new Error(`Failed to parse JSON response for ${errorContext}. Please verify your Home Assistant API is functioning correctly.`);
+  }
+};
+
 export const useHomeAssistantStore = create<HomeAssistantStore>((set, get) => ({
   config: {
     baseUrl: localStorage.getItem('ha_baseUrl') || '',
@@ -81,35 +100,50 @@ export const useHomeAssistantStore = create<HomeAssistantStore>((set, get) => ({
       const start = startDate.toISOString();
       const end = endDate.toISOString();
       
-      console.log(`Fetching calendars from ${baseUrl}/api/calendar`);
+      // Make sure baseUrl doesn't end with a slash
+      const apiUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+      console.log(`Fetching calendars from ${apiUrl}/api/calendar`);
       
       // Get calendar entities
-      const response = await fetch(`${baseUrl}/api/calendar`, {
+      const response = await fetch(`${apiUrl}/api/calendar`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
       });
       
       if (!response.ok) {
-        throw new Error(`Failed to fetch calendar data: ${response.status}`);
+        const statusText = response.statusText || '';
+        throw new Error(`Failed to fetch calendar data: ${response.status} ${statusText}`);
       }
       
-      const data = await response.json();
+      // Validate and parse JSON response
+      const data = await validateJsonResponse(response, 'calendar entities');
       console.log('Available calendars:', data);
       
       // Process and normalize Home Assistant calendar events
       const events: CalendarEvent[] = [];
       
+      if (!Array.isArray(data)) {
+        throw new Error('Unexpected response format: calendar data is not an array');
+      }
+      
       for (const entity of data) {
+        if (!entity.entity_id) {
+          console.warn('Encountered calendar entity without entity_id', entity);
+          continue;
+        }
+        
         const entityId = entity.entity_id;
         console.log(`Fetching events for calendar: ${entityId}`);
         
         // Now fetch events for this calendar entity
-        const eventsResponse = await fetch(`${baseUrl}/api/calendars/${entityId}?start=${start}&end=${end}`, {
+        const eventsResponse = await fetch(`${apiUrl}/api/calendars/${entityId}?start=${start}&end=${end}`, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
+            'Accept': 'application/json',
           },
         });
         
@@ -118,8 +152,14 @@ export const useHomeAssistantStore = create<HomeAssistantStore>((set, get) => ({
           continue;
         }
         
-        const entityEvents = await eventsResponse.json();
+        // Validate and parse JSON response
+        const entityEvents = await validateJsonResponse(eventsResponse, `calendar ${entityId}`);
         console.log(`Received ${entityEvents.length} events for ${entityId}`);
+        
+        if (!Array.isArray(entityEvents)) {
+          console.warn(`Unexpected response format for ${entityId}: events not an array`);
+          continue;
+        }
         
         // Transform Home Assistant events to our app format
         for (const event of entityEvents) {
